@@ -47,3 +47,6 @@ data/*.sqlite-wal
 
 # sensitive samples
 samples/
+
+# claude code
+.claude/worktrees/
