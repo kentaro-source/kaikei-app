@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ export default function DocumentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const [document, setDocument] = useState<DocumentData | null>(null);
   const [ocrResult, setOcrResult] = useState<OcrResultData | null>(null);
   const [journals, setJournals] = useState<JournalEntryData[]>([]);
@@ -108,17 +110,32 @@ export default function DocumentDetailPage({
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm("この書類を削除しますか？")) return;
+    try {
+      await fetch(`/api/documents/${id}`, { method: "DELETE" });
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (loading) return <p className="text-gray-500">読み込み中...</p>;
   if (!document) return <p className="text-red-500">書類が見つかりません</p>;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/" className="text-sm text-gray-500 hover:underline">
-          ダッシュボード
-        </Link>
-        <span className="text-gray-300">/</span>
-        <h1 className="text-xl font-bold">書類詳細</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-sm text-gray-500 hover:underline">
+            ダッシュボード
+          </Link>
+          <span className="text-gray-300">/</span>
+          <h1 className="text-xl font-bold">書類詳細</h1>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+          削除
+        </Button>
       </div>
 
       <Card>
@@ -132,12 +149,20 @@ export default function DocumentDetailPage({
           <div className="text-sm text-gray-500">
             アップロード: {document.uploaded_at} / ステータス: {document.status}
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/api/images/${document.file_path}`}
-            alt={document.file_name}
-            className="max-h-96 rounded border object-contain"
-          />
+          {document.file_path.toLowerCase().endsWith(".pdf") ? (
+            <embed
+              src={`/api/images/${document.file_path}`}
+              type="application/pdf"
+              className="h-[500px] w-full rounded border"
+            />
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={`/api/images/${document.file_path}`}
+              alt={document.file_name}
+              className="max-h-96 rounded border object-contain"
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -147,6 +172,7 @@ export default function DocumentDetailPage({
           documentType={document.type}
           imagePath={document.file_path}
           onOcrComplete={handleOcrComplete}
+          autoStart={document.status === "uploaded"}
         />
       )}
 

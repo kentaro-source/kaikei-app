@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -10,6 +10,7 @@ interface OcrProcessorProps {
   imagePath: string;
   templateId?: string;
   onOcrComplete: (result: Record<string, unknown>) => void;
+  autoStart?: boolean;
 }
 
 export default function OcrProcessor({
@@ -18,45 +19,66 @@ export default function OcrProcessor({
   imagePath,
   templateId,
   onOcrComplete,
+  autoStart = false,
 }: OcrProcessorProps) {
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const isPdf = imagePath.toLowerCase().endsWith(".pdf");
+
   const runOcr = useCallback(async () => {
     setProcessing(true);
     setError(null);
     setProgress(0);
-    setStatus("OCRエンジンを読み込み中...");
 
     try {
-      const { createWorker } = await import("tesseract.js");
-      setProgress(10);
+      let fullText = "";
 
-      const worker = await createWorker("jpn", 1, {
-        logger: (m: { status: string; progress: number }) => {
-          setStatus(m.status);
-          setProgress(Math.round(m.progress * 80) + 10);
-        },
-      });
+      if (isPdf) {
+        // PDFはサーバー側でテキスト抽出
+        setStatus("PDFからテキストを抽出中...");
+        setProgress(30);
 
-      setStatus("画像を認識中...");
-      const {
-        data: { text },
-      } = await worker.recognize(`/api/images/${imagePath}`);
+        const pdfRes = await fetch("/api/pdf-text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file_path: imagePath }),
+        });
+        const pdfData = await pdfRes.json();
+        if (!pdfRes.ok) throw new Error(pdfData.error);
 
-      await worker.terminate();
-      setProgress(90);
+        fullText = pdfData.text;
+        setProgress(70);
+      } else {
+        // 画像はクライアント側でOCR
+        setStatus("OCRエンジンを読み込み中...");
+        setProgress(10);
+
+        const { createWorker } = await import("tesseract.js");
+        const worker = await createWorker("jpn", 1, {
+          logger: (m: { status: string; progress: number }) => {
+            setStatus(m.status);
+            setProgress(Math.round(m.progress * 70) + 10);
+          },
+        });
+
+        setStatus("画像を認識中...");
+        const { data: { text } } = await worker.recognize(`/api/images/${imagePath}`);
+        fullText = text;
+        await worker.terminate();
+      }
+
+      setProgress(80);
       setStatus("結果を保存中...");
 
-      // サーバーに結果を送信
       const res = await fetch("/api/ocr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           document_id: documentId,
-          raw_text: text,
+          raw_text: fullText,
           template_id: templateId,
         }),
       });
@@ -72,7 +94,15 @@ export default function OcrProcessor({
     } finally {
       setProcessing(false);
     }
-  }, [documentId, imagePath, templateId, onOcrComplete]);
+  }, [documentId, imagePath, isPdf, templateId, onOcrComplete]);
+
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoStart && !autoStarted.current) {
+      autoStarted.current = true;
+      runOcr();
+    }
+  }, [autoStart, runOcr]);
 
   return (
     <Card>
@@ -81,7 +111,7 @@ export default function OcrProcessor({
       </CardHeader>
       <CardContent className="space-y-3">
         <Button onClick={runOcr} disabled={processing}>
-          {processing ? "処理中..." : "OCRを実行"}
+          {processing ? "処理中..." : isPdf ? "PDFテキスト抽出" : "OCRを実行"}
         </Button>
 
         {processing && (

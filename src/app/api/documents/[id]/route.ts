@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import path from "path";
+import fs from "fs";
 
 export async function GET(
   request: NextRequest,
@@ -59,6 +61,16 @@ export async function DELETE(
   try {
     const { id } = await params;
     const db = getDb();
+
+    // ファイルも削除
+    const doc = db.prepare("SELECT file_path FROM documents WHERE id = ?").get(id) as { file_path: string } | undefined;
+    if (doc) {
+      const filePath = path.join(process.cwd(), "data", "uploads", doc.file_path);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+
+    db.prepare("DELETE FROM journal_entries WHERE ocr_result_id IN (SELECT id FROM ocr_results WHERE document_id = ?)").run(id);
+    db.prepare("DELETE FROM ocr_results WHERE document_id = ?").run(id);
     db.prepare("DELETE FROM documents WHERE id = ?").run(id);
     return NextResponse.json({ success: true });
   } catch (error) {

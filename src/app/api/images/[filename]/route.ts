@@ -24,6 +24,7 @@ export async function GET(
       ".png": "image/png",
       ".gif": "image/gif",
       ".webp": "image/webp",
+      ".pdf": "application/pdf",
     };
 
     return new NextResponse(buffer, {

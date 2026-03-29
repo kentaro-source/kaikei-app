@@ -18,7 +18,7 @@ export default function UploadPage() {
   const [documentType, setDocumentType] = useState("rent_statement");
 
   const handleUploadComplete = (document: Record<string, unknown>) => {
-    router.push(`/documents/${document.id}`);
+    window.location.href = `/documents/${document.id}`;
   };
 
   return (

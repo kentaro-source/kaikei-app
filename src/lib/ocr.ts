@@ -33,7 +33,7 @@ export function parseAmount(text: string): number | null {
   if (!text) return null;
   const normalized = text
     .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
-    .replace(/[,、，]/g, "")
+    .replace(/[,、，.．]/g, "")
     .replace(/[円¥￥]/g, "")
     .replace(/[\s\u3000]/g, "")
     .replace(/[▲△\-ー−]/g, "-");
@@ -73,6 +73,7 @@ export function parseDate(text: string): string | null {
 
 /** 家賃精算書のOCRテキストからデータ抽出（パターンマッチ） */
 export function parseRentStatement(text: string): ParsedRentStatement {
+  text = normalizeOcrText(text);
   const result: ParsedRentStatement = {};
 
   // 精算月
@@ -108,18 +109,84 @@ export function parseRentStatement(text: string): ParsedRentStatement {
   return result;
 }
 
+/** OCRテキストの前処理（余分なスペース除去） */
+function normalizeOcrText(text: string): string {
+  let result = text;
+  // 日本語文字・数字間のスペースを繰り返し除去
+  const jp = "\\u3000-\\u9FFF\\uF900-\\uFAFF\\u30A0-\\u30FF\\u3040-\\u309F";
+  const patterns = [
+    new RegExp(`([${jp}])\\s+([${jp}])`, "g"),
+    /(\d)\s+(\d)/g,
+    new RegExp(`([${jp}])\\s+(\\d)`, "g"),
+    new RegExp(`(\\d)\\s+([${jp}])`, "g"),
+  ];
+  // 複数パスで除去（「令 和 8 年」→「令和 8年」→「令和8年」）
+  for (let i = 0; i < 5; i++) {
+    const prev = result;
+    for (const p of patterns) {
+      result = result.replace(p, "$1$2");
+    }
+    if (result === prev) break;
+  }
+  return result;
+}
+
 /** 給与明細のOCRテキストからデータ抽出（パターンマッチ） */
 export function parseSalarySlip(text: string): ParsedSalarySlip {
+  text = normalizeOcrText(text);
   const result: ParsedSalarySlip = {};
 
-  // 総支給額
-  const grossMatch = text.match(/(?:総支給|支給合計|給与総額)[\s\S]{0,30}?([０-９0-9,，]+)/);
-  if (grossMatch) {
-    result.gross_salary = parseAmount(grossMatch[1]) || undefined;
+  // 勤務先名（病院名・会社名）
+  // 「〇〇病院」「〇〇クリニック」「〇〇医院」「株式会社〇〇」「〇〇法人」等
+  const employerPatterns = [
+    /(?:医療法人|社会医療法人|社会福祉法人|独立行政法人).{0,30}?(?:病院|クリニック|医院|診療所)/,
+    /(?:医療法人|社会医療法人|社会福祉法人|独立行政法人).{2,20}/,
+    /.{2,15}(?:病院|クリニック|医院|診療所)/,
+    /(?:株式会社|有限会社|合同会社).{2,20}/,
+    /.{2,15}(?:株式会社|有限会社|合同会社)/,
+  ];
+  for (const pattern of employerPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      result.employer_name = match[0].trim();
+      break;
+    }
+  }
+
+  // 支給日・支給月
+  const payDateMatch = text.match(/支給日?令和(\d+)年(\d+)月(\d+)日/);
+  if (payDateMatch) {
+    const year = 2018 + parseInt(payDateMatch[1]);
+    const month = payDateMatch[2].padStart(2, "0");
+    const day = payDateMatch[3].padStart(2, "0");
+    result.payment_month = `${year}/${month}/${day}`;
+  } else {
+    // 「〇月分給与」パターン
+    const monthMatch = text.match(/(令和\d+年\d+月|\d{4}[年\/\-]\d{1,2}月?)/);
+    if (monthMatch) {
+      result.payment_month = parseDate(monthMatch[1]) || undefined;
+    }
+  }
+
+  // 総支給額（「基本給」「合計」の金額から推定）
+  const grossPatterns = [
+    /(?:総支給|支給合計|給与総額)[\s\S]{0,20}?([０-９0-9,，.]{3,})/,
+    /基本給[\s\S]{0,20}?([０-９0-9,，.]{3,})/,
+    /合\s*計[\s\S]{0,10}?([０-９0-9,，.]{5,})/,
+  ];
+  for (const p of grossPatterns) {
+    const m = text.match(p);
+    if (m) {
+      const amount = parseAmount(m[1]);
+      if (amount && amount >= 10000) {
+        result.gross_salary = amount;
+        break;
+      }
+    }
   }
 
   // 所得税
-  const taxMatch = text.match(/(?:所得税|源泉)[\s\S]{0,30}?([０-９0-9,，]+)/);
+  const taxMatch = text.match(/所得税[\s\S]{0,20}?([０-９0-9,，.]{3,})/);
   if (taxMatch) {
     result.income_tax = parseAmount(taxMatch[1]) || undefined;
   }
@@ -137,7 +204,7 @@ export function parseSalarySlip(text: string): ParsedSalarySlip {
   }
 
   // 差引支給額
-  const netMatch = text.match(/(?:差引支給|手取|振込額)[\s\S]{0,30}?([０-９0-9,，]+)/);
+  const netMatch = text.match(/(?:差引支給|振込支給|手取|振込額)[\s\S]{0,20}?([０-９0-9,，.]{3,})/);
   if (netMatch) {
     result.net_salary = parseAmount(netMatch[1]) || undefined;
   }
