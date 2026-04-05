@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const EMPLOYERS = [
+  "株式会社DRK企画",
   "同仁病院",
   "森のクリニック",
   "若草病院",
