@@ -14,7 +14,7 @@ interface JournalInput {
 
 export async function POST(request: NextRequest) {
   try {
-    const { journals } = await request.json();
+    const { journals, source } = await request.json();
 
     if (!journals || !Array.isArray(journals)) {
       return NextResponse.json({ error: "journals が必要です" }, { status: 400 });
@@ -27,8 +27,9 @@ export async function POST(request: NextRequest) {
       "SELECT COUNT(*) as count FROM journal_entries WHERE date = ? AND debit_account = ? AND credit_account = ? AND amount = ? AND description = ?"
     );
 
+    const src = source || "other";
     const insert = db.prepare(
-      "INSERT INTO journal_entries (id, ocr_result_id, date, debit_account, debit_sub_account, credit_account, credit_sub_account, amount, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO journal_entries (id, ocr_result_id, source, date, debit_account, debit_sub_account, credit_account, credit_sub_account, amount, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     );
 
     let inserted = 0;
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
           continue;
         }
         insert.run(
-          j.id, null, j.date,
+          j.id, null, src, j.date,
           j.debit_account, j.debit_sub_account,
           j.credit_account, j.credit_sub_account,
           j.amount, j.description

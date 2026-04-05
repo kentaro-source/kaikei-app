@@ -173,7 +173,7 @@ export default function BankbookPage() {
       const res = await fetch("/api/wealthpark/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ journals }),
+        body: JSON.stringify({ journals, source: "bankbook" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

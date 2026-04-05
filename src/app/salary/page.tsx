@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ const EMPLOYERS = [
 ];
 
 interface SalaryEntry {
+  id: string;
   employer: string;
   date: string;
   taxable_salary: number;
@@ -27,8 +28,17 @@ export default function SalaryPage() {
   const [taxable, setTaxable] = useState("");
   const [tax, setTax] = useState("");
   const [entries, setEntries] = useState<SalaryEntry[]>([]);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchEntries = useCallback(async () => {
+    try {
+      const res = await fetch("/api/salary");
+      const data = await res.json();
+      setEntries(data.entries || []);
+    } catch {}
+  }, []);
+
+  useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
   const taxableNum = parseInt(taxable.replace(/,/g, "") || "0");
   const taxNum = parseInt(tax.replace(/,/g, "") || "0");
@@ -39,47 +49,35 @@ export default function SalaryPage() {
       return;
     }
     setError(null);
-    setEntries((prev) => [
-      ...prev,
-      {
-        employer,
-        date,
-        taxable_salary: taxableNum,
-        income_tax: taxNum,
-      },
-    ]);
-    setTaxable("");
-    setTax("");
-  };
-
-  const handleRemove = (index: number) => {
-    setEntries((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSave = async () => {
-    const journals = entries.map((e) => ({
-      id: crypto.randomUUID(),
-      date: e.date,
-      debit_account: "給与所得",
-      debit_sub_account: e.employer,
-      credit_account: "",
-      credit_sub_account: "",
-      amount: e.taxable_salary,
-      description: `給与 ${e.employer} 課税支給額`,
-    }));
-
     try {
-      const res = await fetch("/api/wealthpark/save", {
+      const res = await fetch("/api/salary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ journals }),
+        body: JSON.stringify({
+          employer,
+          date,
+          taxable_salary: taxableNum,
+          income_tax: taxNum,
+        }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setSaved(true);
+      if (!res.ok) throw new Error("保存に失敗しました");
+      fetchEntries();
+      setTaxable("");
+      setTax("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました");
     }
+  };
+
+  const handleRemove = async (id: string) => {
+    try {
+      await fetch("/api/salary", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      fetchEntries();
+    } catch {}
   };
 
   const totalTaxable = entries.reduce((sum, e) => sum + e.taxable_salary, 0);
@@ -167,13 +165,8 @@ export default function SalaryPage() {
       {entries.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between text-base">
-              <span>入力済み ({entries.length}件)</span>
-              {!saved ? (
-                <Button onClick={handleSave} size="sm">保存してCSV出力可能にする</Button>
-              ) : (
-                <span className="text-sm text-green-600">保存済み</span>
-              )}
+            <CardTitle className="text-base">
+              入力済み ({entries.length}件)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -189,13 +182,13 @@ export default function SalaryPage() {
               </thead>
               <tbody>
                 {entries.map((e, i) => (
-                  <tr key={i} className="border-b">
+                  <tr key={e.id} className="border-b">
                     <td className="py-2">{e.employer}</td>
                     <td className="py-2">{e.date}</td>
                     <td className="py-2 text-right font-mono">{e.taxable_salary.toLocaleString()}</td>
                     <td className="py-2 text-right font-mono">{e.income_tax.toLocaleString()}</td>
                     <td className="py-2">
-                      <button onClick={() => handleRemove(i)} className="text-xs text-red-400 hover:text-red-600">削除</button>
+                      <button onClick={() => handleRemove(e.id)} className="text-xs text-red-400 hover:text-red-600">削除</button>
                     </td>
                   </tr>
                 ))}

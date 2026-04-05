@@ -40,6 +40,7 @@ function initTables(db: Database.Database) {
     CREATE TABLE IF NOT EXISTS journal_entries (
       id TEXT PRIMARY KEY,
       ocr_result_id TEXT REFERENCES ocr_results(id),
+      source TEXT DEFAULT 'other',
       date TEXT NOT NULL,
       debit_account TEXT NOT NULL,
       debit_sub_account TEXT,

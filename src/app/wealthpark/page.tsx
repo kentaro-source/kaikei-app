@@ -109,7 +109,7 @@ export default function WealthParkPage() {
       const res = await fetch("/api/wealthpark/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ journals, month: report?.month }),
+        body: JSON.stringify({ journals, source: "wealthpark" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
