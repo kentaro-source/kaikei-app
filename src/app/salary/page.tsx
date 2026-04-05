@@ -43,7 +43,7 @@ export default function SalaryPage() {
   const taxableNum = parseInt(taxable.replace(/,/g, "") || "0");
   const taxNum = parseInt(tax.replace(/,/g, "") || "0");
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!date || !taxable) {
       setError("支給日と課税支給額を入力してください");
       return;
