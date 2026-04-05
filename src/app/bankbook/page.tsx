@@ -46,6 +46,26 @@ export default function BankbookPage() {
   const [showSkipped, setShowSkipped] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const excludeJournal = (id: string) => {
+    setResults((prev) =>
+      prev.map((r) => {
+        if (r.journal && r.journal.id === id) {
+          return { ...r, action: "skip" as const, skip_reason: "手動除外", journal: undefined };
+        }
+        if (r.journals) {
+          const target = r.journals.find((j) => j.id === id);
+          if (target) {
+            const remaining = r.journals.filter((j) => j.id !== id);
+            return remaining.length > 0
+              ? { ...r, journals: remaining }
+              : { ...r, action: "skip" as const, skip_reason: "手動除外", journals: undefined };
+          }
+        }
+        return r;
+      })
+    );
+  };
+
   const updateJournal = (id: string, field: string, value: string) => {
     setResults((prev) =>
       prev.map((r) => {
@@ -63,38 +83,47 @@ export default function BankbookPage() {
     );
   };
 
-  const handleUpload = useCallback(async (file: File) => {
+  const handleUpload = useCallback(async (files: File[]) => {
     setLoading(true);
     setError(null);
     setResults([]);
     setSaved(false);
 
     try {
-      // 1. ファイルをアップロード
-      setError("アップロード中...");
-      const uploadForm = new FormData();
-      uploadForm.append("file", file);
-      uploadForm.append("type", "bankbook");
+      const allTransactions: Record<string, unknown>[] = [];
 
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm });
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error(uploadData.error);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        // 1. ファイルをアップロード
+        setError(`アップロード中... (${i + 1}/${files.length})`);
+        const uploadForm = new FormData();
+        uploadForm.append("file", file);
+        uploadForm.append("type", "bankbook");
 
-      // 2. Claude APIで読み取り（30秒以上かかる場合あり）
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error);
+
+        // 2. Claude APIで読み取り
+        setError(`Claude AIで読み取り中... (${i + 1}/${files.length})`);
+        const ocrRes = await fetch("/api/ocr-claude", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            file_path: uploadData.document.file_path,
+            document_type: "bankbook",
+          }),
+        });
+        const ocrData = await ocrRes.json();
+        if (!ocrRes.ok) throw new Error(ocrData.error);
+
+        const parsed = Array.isArray(ocrData.parsed) ? ocrData.parsed : [ocrData.parsed];
+        allTransactions.push(...parsed);
+      }
+
+      // 3. 仕訳ルール適用（全ファイルまとめて重複除外）
       setError(null);
-      const ocrRes = await fetch("/api/ocr-claude", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          file_path: uploadData.document.file_path,
-          document_type: "bankbook",
-        }),
-      });
-      const ocrData = await ocrRes.json();
-      if (!ocrRes.ok) throw new Error(ocrData.error);
-
-      // 3. 仕訳ルール適用
-      const parsed = Array.isArray(ocrData.parsed) ? ocrData.parsed : [ocrData.parsed];
+      const parsed = allTransactions;
       const ruleRes = await fetch("/api/bankbook/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -114,8 +143,8 @@ export default function BankbookPage() {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleUpload(file);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) handleUpload(files);
   }, [handleUpload]);
 
   const handleSave = async () => {
@@ -167,9 +196,10 @@ export default function BankbookPage() {
               const input = document.createElement("input");
               input.type = "file";
               input.accept = "image/*,.pdf";
+              input.multiple = true;
               input.onchange = (e) => {
-                const f = (e.target as HTMLInputElement).files?.[0];
-                if (f) handleUpload(f);
+                const files = Array.from((e.target as HTMLInputElement).files || []);
+                if (files.length > 0) handleUpload(files);
               };
               input.click();
             }}
@@ -211,6 +241,7 @@ export default function BankbookPage() {
                     <TableHead>補助</TableHead>
                     <TableHead className="text-right">金額</TableHead>
                     <TableHead>摘要</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -227,6 +258,9 @@ export default function BankbookPage() {
                       <TableCell className="text-xs text-gray-500">{j.credit_sub_account}</TableCell>
                       <TableCell className="text-right text-xs font-mono">{j.amount.toLocaleString()}</TableCell>
                       <TableCell className="text-xs">{j.description}</TableCell>
+                      <TableCell>
+                        <button onClick={() => excludeJournal(j.id)} className="text-xs text-red-400 hover:text-red-600">除外</button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -80,7 +80,7 @@ function generateSocialInsuranceJournals(t: BankTransaction): BankJournalEntry[]
 
 // 除外ルール（摘要に含まれるキーワード）
 const SKIP_RULES: { keywords: string[]; reason: string }[] = [
-  { keywords: ["タイコウ", "ﾀｲｺｳ", "大興"], reason: "管理会社入金（WealthPark処理済み）" },
+  { keywords: ["タイコ", "ﾀｲｺ", "大興", "ﾀｲｺｳ", "タイコウ"], reason: "管理会社入金（WealthPark処理済み）" },
   { keywords: ["UC"], reason: "カード引落（カード連携済み）" },
   // RKS（ギガプライズ）はオーシャンハイツのインターネット代なので仕訳対象
   { keywords: ["ミツイスミトモカード", "ﾐﾂｲｽﾐﾄﾓ"], reason: "カード引落（カード連携済み）" },
@@ -96,29 +96,29 @@ const JOURNAL_RULES: {
 }[] = [
   // 入金 - 産業医収入
   {
-    keywords: ["ﾐﾔｻﾞｷｾﾝｶ", "ミヤサキセンカ", "ミヤザキセンカ", "宮崎千果", "ﾐﾔｻﾞｷ", "ｷｾﾝﾉﾘ", "ｷﾋﾟｶﾌ"],
+    keywords: ["ﾐﾔｻﾞｷｾﾝｶ", "ミヤサキセンカ", "ミヤザキセンカ", "宮崎千果", "ﾐﾔｻﾞｷ", "ミヤザキ", "ミヤサキ", "ｷｾﾝﾉﾘ", "ｷﾋﾟｶﾌ", "ｾﾝｶ", "ｾﾝﾘｮ", "ｷｾﾝ"],
     debit_account: "普通預金",
     credit_account: "産業医収入",
     sub_account: "宮崎千果",
     label: "産業医収入",
   },
-  // 出金 - ローン返済
+  // 出金 - ローン返済・利息（金額で物件を判別するため特殊処理）
   {
     keywords: ["返済元金", "ﾍﾝｻｲ元金", "ヘンサイ元金"],
-    debit_account: "長期借入金",
+    debit_account: "__loan_repayment__",
     credit_account: "普通預金",
     label: "借入金返済（元金）",
   },
   {
     keywords: ["約定利息", "ﾔｸﾃｲ利息", "ヤクテイ利息"],
-    debit_account: "支払利息",
+    debit_account: "__loan_interest__",
     credit_account: "普通預金",
     label: "借入金利息",
   },
-  // 出金 - 定期積金
+  // 出金 - 定期積金（金額で物件を判別）
   {
     keywords: ["定積", "ﾃｲｷ", "テイキ"],
-    debit_account: "定期積金",
+    debit_account: "__teiki__",
     credit_account: "普通預金",
     label: "定期積金",
   },
@@ -137,12 +137,27 @@ const JOURNAL_RULES: {
     sub_account: "オーシャンハイツ桜ヶ丘",
     label: "インターネット代",
   },
-  // 出金 - インターネット
+  // 出金 - インターネット（祇園KAWANOビルⅢ）
   {
     keywords: ["SMBC", "ｲﾝﾀｰﾈｯﾄ", "インターネット"],
     debit_account: "通信費",
     credit_account: "普通預金",
+    sub_account: "祇園KAWANOビルⅢ",
     label: "通信費",
+  },
+  // 出金 - 振込手数料
+  {
+    keywords: ["振込手数料", "ﾌﾘｺﾐﾃｽｳﾘｮｳ", "手数料"],
+    debit_account: "支払手数料",
+    credit_account: "普通預金",
+    label: "振込手数料",
+  },
+  // 出金 - 振込（資金移動等）
+  {
+    keywords: ["振込資金", "ﾌﾘｺﾐｼｷﾝ"],
+    debit_account: "普通預金",
+    credit_account: "普通預金",
+    label: "資金移動",
   },
 ];
 
@@ -169,17 +184,30 @@ function setBankSubAccount(journal: BankJournalEntry): BankJournalEntry {
   return journal;
 }
 
+/** 重複取引を除外 */
+function deduplicateTransactions(transactions: BankTransaction[]): BankTransaction[] {
+  const seen = new Set<string>();
+  return transactions.filter((t) => {
+    const key = `${t.date}_${t.withdrawal}_${t.deposit}_${t.balance}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /** 通帳取引を仕訳ルールに照合 */
 export function processBankTransactions(
   transactions: BankTransaction[],
   startDate?: string
 ): BankTransactionWithRule[] {
-  return transactions
+  const deduplicated = deduplicateTransactions(transactions);
+  return deduplicated
     .filter((t) => !startDate || t.date >= startDate)
     .map((t) => {
-      // 除外チェック
+      // 除外チェック（金額混入を除去してからマッチ）
+      const cleaned = cleanDescription(t.description);
       for (const rule of SKIP_RULES) {
-        if (matchesKeywords(t.description, rule.keywords)) {
+        if (matchesKeywords(cleaned, rule.keywords) || matchesKeywords(t.description, rule.keywords)) {
           return { transaction: t, action: "skip" as const, skip_reason: rule.reason };
         }
       }
@@ -187,6 +215,66 @@ export function processBankTransactions(
       // 仕訳ルールマッチ
       for (const rule of JOURNAL_RULES) {
         if (matchesKeywords(t.description, rule.keywords)) {
+          // 定期積金は金額で物件を判別
+          if (rule.debit_account === "__teiki__") {
+            const amount = t.withdrawal;
+            const prop = amount >= 100000 ? "オーシャンハイツ桜ヶ丘" : "祇園KAWANOビルⅢ";
+            return {
+              transaction: t,
+              action: "journal" as const,
+              journal: setBankSubAccount({
+                id: uuidv4(),
+                date: t.date,
+                debit_account: "定期積金",
+                debit_sub_account: prop,
+                credit_account: "普通預金",
+                credit_sub_account: "",
+                amount,
+                description: `定期積金 ${prop}`,
+              }),
+            };
+          }
+
+          // ローン返済は金額で物件を判別（大きい方がオーシャンハイツ）
+          if (rule.debit_account === "__loan_repayment__") {
+            const amount = t.withdrawal;
+            const prop = amount >= 200000 ? "オーシャンハイツ桜ヶ丘" : "祇園KAWANOビルⅢ";
+            return {
+              transaction: t,
+              action: "journal" as const,
+              journal: setBankSubAccount({
+                id: uuidv4(),
+                date: t.date,
+                debit_account: "長期借入金",
+                debit_sub_account: prop,
+                credit_account: "普通預金",
+                credit_sub_account: "",
+                amount,
+                description: `借入金返済（元金） ${prop}`,
+              }),
+            };
+          }
+
+          // 約定利息は金額で物件を判別
+          if (rule.debit_account === "__loan_interest__") {
+            const amount = t.withdrawal;
+            const prop = amount >= 200000 ? "オーシャンハイツ桜ヶ丘" : "祇園KAWANOビルⅢ";
+            return {
+              transaction: t,
+              action: "journal" as const,
+              journal: setBankSubAccount({
+                id: uuidv4(),
+                date: t.date,
+                debit_account: "支払利息",
+                debit_sub_account: prop,
+                credit_account: "普通預金",
+                credit_sub_account: "",
+                amount,
+                description: `借入金利息 ${prop}`,
+              }),
+            };
+          }
+
           // 社会保険料は複数仕訳を生成
           if (rule.debit_account === "__social_insurance__") {
             return {
@@ -214,17 +302,35 @@ export function processBankTransactions(
         }
       }
 
-      // マッチしない取引 → 不明として仕訳生成（手動で科目設定）
+      // マッチしない取引
       const amount = t.deposit > 0 ? t.deposit : t.withdrawal;
+      // 入金で管理会社以外 → 産業医収入として処理
+      if (t.deposit > 0) {
+        return {
+          transaction: t,
+          action: "journal" as const,
+          journal: setBankSubAccount({
+            id: uuidv4(),
+            date: t.date,
+            debit_account: "普通預金",
+            debit_sub_account: "",
+            credit_account: "産業医収入",
+            credit_sub_account: "",
+            amount,
+            description: `産業医収入 ${cleanDescription(t.description)}`,
+          }),
+        };
+      }
+      // 出金 → 要確認
       return {
         transaction: t,
         action: "journal" as const,
         journal: setBankSubAccount({
           id: uuidv4(),
           date: t.date,
-          debit_account: t.deposit > 0 ? "普通預金" : "【要確認】",
+          debit_account: "【要確認】",
           debit_sub_account: "",
-          credit_account: t.deposit > 0 ? "【要確認】" : "普通預金",
+          credit_account: "普通預金",
           credit_sub_account: "",
           amount,
           description: cleanDescription(t.description),
