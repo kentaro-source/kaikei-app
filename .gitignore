@@ -50,3 +50,4 @@ samples/
 
 # claude code
 .claude/worktrees/
+data/uploads/
