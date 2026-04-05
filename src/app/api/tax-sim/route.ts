@@ -13,6 +13,7 @@ function ensureTable() {
       earthquake_insurance INTEGER NOT NULL DEFAULT 0,
       medical_expense INTEGER NOT NULL DEFAULT 0,
       ideco INTEGER NOT NULL DEFAULT 0,
+      housing_loan INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     )
   `);
@@ -36,8 +37,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     db.prepare(`
-      INSERT INTO tax_sim_data (id, year, real_estate_profit, social_insurance, life_insurance, earthquake_insurance, medical_expense, ideco, updated_at)
-      VALUES ('current', ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+      INSERT INTO tax_sim_data (id, year, real_estate_profit, social_insurance, life_insurance, earthquake_insurance, medical_expense, ideco, housing_loan, updated_at)
+      VALUES ('current', ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
       ON CONFLICT(id) DO UPDATE SET
         year = excluded.year,
         real_estate_profit = excluded.real_estate_profit,
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
         earthquake_insurance = excluded.earthquake_insurance,
         medical_expense = excluded.medical_expense,
         ideco = excluded.ideco,
+        housing_loan = excluded.housing_loan,
         updated_at = datetime('now', 'localtime')
     `).run(
       body.year || 2025,
@@ -55,6 +57,7 @@ export async function POST(request: NextRequest) {
       body.earthquake_insurance || 0,
       body.medical_expense || 0,
       body.ideco || 0,
+      body.housing_loan || 0,
     );
 
     return NextResponse.json({ success: true });

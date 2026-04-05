@@ -78,6 +78,7 @@ export default function TaxSimPage() {
   const [earthquakeInsurance, setEarthquakeInsurance] = useState("");
   const [medicalExpense, setMedicalExpense] = useState("");
   const [ideco, setIdeco] = useState("");
+  const [housingLoan, setHousingLoan] = useState("");
 
   const [loaded, setLoaded] = useState(false);
 
@@ -98,6 +99,7 @@ export default function TaxSimPage() {
         setEarthquakeInsurance(simData.data.earthquake_insurance?.toString() || "");
         setMedicalExpense(simData.data.medical_expense?.toString() || "");
         setIdeco(simData.data.ideco?.toString() || "");
+        setHousingLoan(simData.data.housing_loan?.toString() || "");
       }
       setLoaded(true);
     } catch {}
@@ -120,11 +122,12 @@ export default function TaxSimPage() {
           earthquake_insurance: num(earthquakeInsurance),
           medical_expense: num(medicalExpense),
           ideco: num(ideco),
+          housing_loan: num(housingLoan),
         }),
       }).catch(() => {});
     }, 500);
     return () => clearTimeout(timer);
-  }, [loaded, realEstateProfit, socialInsurance, lifeInsurance, earthquakeInsurance, medicalExpense, ideco]);
+  }, [loaded, realEstateProfit, socialInsurance, lifeInsurance, earthquakeInsurance, medicalExpense, ideco, housingLoan]);
 
   const num = (s: string) => parseInt(s.replace(/,/g, "") || "0", 10);
 
@@ -154,8 +157,10 @@ export default function TaxSimPage() {
   // 課税所得
   const taxableIncome = Math.max(0, totalIncome - totalDeductions);
 
-  // 所得税額
-  const incomeTax = calcIncomeTax(taxableIncome);
+  // 所得税額（住宅ローン控除は税額控除）
+  const incomeTaxBeforeCredit = calcIncomeTax(taxableIncome);
+  const housingLoanCredit = num(housingLoan);
+  const incomeTax = Math.max(0, incomeTaxBeforeCredit - housingLoanCredit);
 
   // 源泉徴収済み税額
   const withheldTax = salaryEntries.reduce((sum, e) => sum + e.income_tax, 0);
@@ -278,6 +283,25 @@ export default function TaxSimPage() {
           </div>
           <div className="mt-3 text-right text-sm">
             所得控除合計: <span className="font-mono font-bold">{fmt(totalDeductions)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 税額控除 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">税額控除</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="max-w-xs">
+            <Label>住宅ローン控除</Label>
+            <Input
+              inputMode="numeric"
+              value={housingLoan}
+              onChange={(e) => setHousingLoan(e.target.value)}
+              placeholder="0"
+              className="mt-1"
+            />
           </div>
         </CardContent>
       </Card>
