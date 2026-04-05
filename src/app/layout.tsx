@@ -71,6 +71,9 @@ export default function RootLayout({
               <Link href="/salary" className="text-sm hover:underline">
                 給与
               </Link>
+              <Link href="/tax-sim" className="text-sm hover:underline">
+                確定申告
+              </Link>
               <Link href="/export" className="text-sm hover:underline">
                 CSV出力
               </Link>
