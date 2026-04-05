@@ -186,6 +186,8 @@ function cleanDescription(desc: string): string {
 }
 
 const BANK_SUB_ACCOUNT = "宮崎太陽銀行";
+const BANK_SUB_KAWANO = "宮崎太陽銀行(祇園kawano)";
+const BANK_SUB_OCEAN = "宮崎太陽銀行(オーシャン)";
 
 /** 普通預金の補助科目を設定 */
 function setBankSubAccount(journal: BankJournalEntry): BankJournalEntry {
@@ -232,17 +234,17 @@ export function processBankTransactions(
           // 定期積金は金額で物件を判別
           if (rule.debit_account === "__teiki__") {
             const amount = t.withdrawal;
-            const prop = amount >= 100000 ? "オーシャン" : "祇園KAWANO";
+            const prop = amount >= 100000 ? "オーシャン" : "祇園kawano";
             return {
               transaction: t,
               action: "journal" as const,
-              journal: setBankSubAccount({
+              journal: {
                 id: uuidv4(),
                 date: t.date,
-                debit_account: "定期積金",
+                debit_account: "普通預金",
                 debit_sub_account: prop,
                 credit_account: "普通預金",
-                credit_sub_account: "",
+                credit_sub_account: BANK_SUB_ACCOUNT,
                 amount,
                 description: `定期積金 ${prop}`,
               }),
