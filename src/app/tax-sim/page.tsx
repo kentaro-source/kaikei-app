@@ -34,14 +34,24 @@ function calcIncomeTax(taxableIncome: number): number {
   return 0;
 }
 
-// 給与所得控除
+// 給与所得控除（2025年分改正: 最低保障額65万円に引き上げ）
 function calcSalaryDeduction(totalSalary: number): number {
-  if (totalSalary <= 1625000) return 550000;
+  if (totalSalary <= 1625000) return 650000;
   if (totalSalary <= 1800000) return Math.floor(totalSalary * 0.4 - 100000);
   if (totalSalary <= 3600000) return Math.floor(totalSalary * 0.3 + 80000);
   if (totalSalary <= 6600000) return Math.floor(totalSalary * 0.2 + 440000);
   if (totalSalary <= 8500000) return Math.floor(totalSalary * 0.1 + 1100000);
   return 1950000;
+}
+
+// 基礎控除（2026年分: 所得に応じて58万〜95万円）
+function calcBasicDeduction(totalIncome: number): number {
+  if (totalIncome <= 1320000) return 950000;
+  if (totalIncome <= 3360000) return 880000;
+  if (totalIncome <= 4890000) return 680000;
+  if (totalIncome <= 6550000) return 630000;
+  if (totalIncome <= 23500000) return 580000;
+  return 0;
 }
 
 // ふるさと納税上限額（自己負担2,000円）
@@ -148,8 +158,10 @@ export default function TaxSimPage() {
   // 総所得金額
   const totalIncome = salaryIncome + Math.max(0, realEstateProfitNum);
 
+  // 基礎控除
+  const basicDeduction = calcBasicDeduction(totalIncome);
+
   // 所得控除合計
-  const basicDeduction = 480000; // 基礎控除
   const totalDeductions =
     basicDeduction +
     num(socialInsurance) +
@@ -285,10 +297,11 @@ export default function TaxSimPage() {
               />
             </div>
             <div>
-              <Label>基礎控除</Label>
+              <Label>基礎控除（自動計算）</Label>
               <div className="mt-1 rounded border bg-gray-50 px-3 py-2 font-mono text-sm">
                 {fmt(basicDeduction)}
               </div>
+              <p className="mt-1 text-[10px] text-gray-400">2026年分: 所得に応じて58万〜95万円</p>
             </div>
           </div>
           <div className="mt-3 text-right text-sm">
