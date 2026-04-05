@@ -254,7 +254,7 @@ export default function WealthParkPage() {
           </CardContent>
         </Card>
       )}
-      {/* 入居者一覧（個人モード・プチマリアのみ） */}
+      {/* 入居者一覧（個人モード・確定申告用） */}
       {tenants.length > 0 && entity === "personal" && (
         <Card>
           <CardHeader>
@@ -267,29 +267,50 @@ export default function WealthParkPage() {
                 acc[t.property_name].push(t);
                 return acc;
               }, {})
-            ).map(([prop, list]) => (
-              <div key={prop} className="mb-4">
-                <h3 className="mb-1 font-bold text-sm">{prop}</h3>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-xs text-gray-500">
-                      <th className="pb-1">部屋</th>
-                      <th className="pb-1">契約者</th>
-                      <th className="pb-1 text-right">月額（税込）</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {list.map((t, i) => (
-                      <tr key={i} className="border-b">
-                        <td className="py-1">{t.room}</td>
-                        <td className="py-1">{t.tenant_name}</td>
-                        <td className="py-1 text-right font-mono">{t.total.toLocaleString()}</td>
+            ).map(([prop, list]) => {
+              // 部屋ごとに集約（月額=直近、年間=合計）
+              const byRoom = list.reduce<Record<string, { tenant_name: string; monthly: number; annual: number; months: number }>>((acc, t) => {
+                if (!acc[t.room]) acc[t.room] = { tenant_name: t.tenant_name, monthly: 0, annual: 0, months: 0 };
+                acc[t.room].tenant_name = t.tenant_name;
+                acc[t.room].monthly = t.total; // 最新月額
+                acc[t.room].annual += t.total;
+                acc[t.room].months++;
+                return acc;
+              }, {});
+              const annualTotal = Object.values(byRoom).reduce((s, r) => s + r.annual, 0);
+
+              return (
+                <div key={prop} className="mb-4">
+                  <h3 className="mb-1 font-bold text-sm">{prop}</h3>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-xs text-gray-500">
+                        <th className="pb-1">部屋</th>
+                        <th className="pb-1">契約者</th>
+                        <th className="pb-1 text-right">月額</th>
+                        <th className="pb-1 text-right">年間</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ))}
+                    </thead>
+                    <tbody>
+                      {Object.entries(byRoom).sort(([a], [b]) => a.localeCompare(b)).map(([room, data]) => (
+                        <tr key={room} className="border-b">
+                          <td className="py-1">{room}</td>
+                          <td className="py-1">{data.tenant_name}</td>
+                          <td className="py-1 text-right font-mono">{data.monthly.toLocaleString()}</td>
+                          <td className="py-1 text-right font-mono">{data.annual.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                      <tr className="font-bold">
+                        <td className="pt-1">合計</td>
+                        <td></td>
+                        <td></td>
+                        <td className="pt-1 text-right font-mono">{annualTotal.toLocaleString()}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}
