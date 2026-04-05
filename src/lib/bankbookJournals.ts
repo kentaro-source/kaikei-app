@@ -232,7 +232,7 @@ export function processBankTransactions(
           // 定期積金は金額で物件を判別
           if (rule.debit_account === "__teiki__") {
             const amount = t.withdrawal;
-            const prop = amount >= 100000 ? "オーシャン積立" : "KAWANO積立";
+            const prop = amount >= 100000 ? "オーシャンハイツ" : "祇園KAWANOビルⅢ";
             return {
               transaction: t,
               action: "journal" as const,
