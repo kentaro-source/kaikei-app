@@ -72,6 +72,25 @@ export default function ExportPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("この仕訳を削除しますか？")) return;
+    try {
+      await fetch(`/api/export/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      setEntries((prev) => prev.filter((e) => e.id !== id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleExport = async () => {
     if (selectedIds.size === 0) return;
     setExporting(true);
@@ -168,6 +187,7 @@ export default function ExportPage() {
                     <TableHead>貸方</TableHead>
                     <TableHead className="text-right">金額</TableHead>
                     <TableHead>摘要</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -187,6 +207,9 @@ export default function ExportPage() {
                         {e.amount.toLocaleString()}
                       </TableCell>
                       <TableCell>{e.description}</TableCell>
+                      <TableCell>
+                        <button onClick={() => handleDelete(e.id)} className="text-xs text-red-400 hover:text-red-600">削除</button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

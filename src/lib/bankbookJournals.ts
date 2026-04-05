@@ -83,7 +83,7 @@ const SKIP_RULES: { keywords: string[]; reason: string }[] = [
   { keywords: ["タイコ", "ﾀｲｺ", "大興", "ﾀｲｺｳ", "タイコウ"], reason: "管理会社入金（WealthPark処理済み）" },
   { keywords: ["UC"], reason: "カード引落（カード連携済み）" },
   // RKS（ギガプライズ）はオーシャンハイツのインターネット代なので仕訳対象
-  { keywords: ["ミツイスミトモカード", "ﾐﾂｲｽﾐﾄﾓ"], reason: "カード引落（カード連携済み）" },
+  { keywords: ["ミツイスミトモカード", "ﾐﾂｲｽﾐﾄﾓ", "ミツイストEカード", "ﾐﾂｲｽﾄ", "ミツイスト"], reason: "カード引落（カード連携済み）" },
 ];
 
 // 仕訳ルール（摘要キーワード → 勘定科目）
@@ -144,6 +144,20 @@ const JOURNAL_RULES: {
     credit_account: "普通預金",
     sub_account: "祇園KAWANOビルⅢ",
     label: "通信費",
+  },
+  // 入金 - 受取利息
+  {
+    keywords: ["利息", "ﾘｿｸ", "お利息"],
+    debit_account: "普通預金",
+    credit_account: "受取利息",
+    label: "受取利息",
+  },
+  // 出金 - 法人税・住民税・事業税
+  {
+    keywords: ["法人税", "ﾎｳｼﾞﾝｾﾞｲ", "住民税", "事業税", "窓口収納代金", "窓口収納"],
+    debit_account: "法人税等",
+    credit_account: "普通預金",
+    label: "法人税等",
   },
   // 出金 - 振込手数料
   {
