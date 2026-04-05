@@ -43,6 +43,7 @@ export default function BankbookPage() {
   const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState("2025/12/01");
   const [results, setResults] = useState<TransactionWithRule[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [showSkipped, setShowSkipped] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -81,6 +82,14 @@ export default function BankbookPage() {
         return r;
       })
     );
+  };
+
+  const addFiles = useCallback((files: File[]) => {
+    setPendingFiles((prev) => [...prev, ...files]);
+  }, []);
+
+  const removeFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleUpload = useCallback(async (files: File[]) => {
@@ -144,8 +153,15 @@ export default function BankbookPage() {
     e.preventDefault();
     setDragging(false);
     const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) handleUpload(files);
-  }, [handleUpload]);
+    if (files.length > 0) addFiles(files);
+  }, [addFiles]);
+
+  const startProcessing = useCallback(() => {
+    if (pendingFiles.length > 0) {
+      handleUpload(pendingFiles);
+      setPendingFiles([]);
+    }
+  }, [pendingFiles, handleUpload]);
 
   const handleSave = async () => {
     const journals = results
@@ -199,7 +215,7 @@ export default function BankbookPage() {
               input.multiple = true;
               input.onchange = (e) => {
                 const files = Array.from((e.target as HTMLInputElement).files || []);
-                if (files.length > 0) handleUpload(files);
+                if (files.length > 0) addFiles(files);
               };
               input.click();
             }}
@@ -210,8 +226,25 @@ export default function BankbookPage() {
             <p className="text-sm text-gray-600">通帳のスキャン画像をドラッグ&ドロップ</p>
             <p className="mt-1 text-xs text-gray-400">PDF・画像対応（Claude AIで読み取り）</p>
           </div>
-          {loading && <p className="mt-3 text-sm text-blue-500">Claude AIで読み取り中...</p>}
-          {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+          {/* 追加済みファイル */}
+          {pendingFiles.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <p className="text-sm font-medium">{pendingFiles.length}枚の画像を追加済み</p>
+              <div className="flex flex-wrap gap-2">
+                {pendingFiles.map((f, i) => (
+                  <div key={i} className="flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs">
+                    <span>{f.name}</span>
+                    <button onClick={() => removeFile(i)} className="text-red-400 hover:text-red-600">×</button>
+                  </div>
+                ))}
+              </div>
+              <Button onClick={startProcessing} disabled={loading}>
+                {loading ? "読み取り中..." : `${pendingFiles.length}枚を読み取り開始`}
+              </Button>
+            </div>
+          )}
+          {loading && error && <p className="mt-3 text-sm text-blue-500">{error}</p>}
+          {!loading && error && <p className="mt-3 text-sm text-red-500">{error}</p>}
         </CardContent>
       </Card>
 
