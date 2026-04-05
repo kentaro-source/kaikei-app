@@ -68,7 +68,7 @@ export default function RootLayout({
               <Link href="/card" className="text-sm hover:underline">
                 カード
               </Link>
-              <Link href="/upload" className="text-sm hover:underline">
+              <Link href="/salary" className="text-sm hover:underline">
                 給与
               </Link>
               <Link href="/export" className="text-sm hover:underline">
