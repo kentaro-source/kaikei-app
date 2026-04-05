@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +58,18 @@ export default function WealthParkPage() {
   const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [saved, setSaved] = useState(false);
   const [tenants, setTenants] = useState<{ property_name: string; room: string; tenant_name: string; month: string; total: number }[]>([]);
+
+  // 個人モード時にDBからテナントデータを読み込む
+  useEffect(() => {
+    if (entity === "personal") {
+      fetch("/api/tenants")
+        .then((r) => r.json())
+        .then((data) => setTenants(data.tenants || []))
+        .catch(() => {});
+    } else {
+      setTenants([]);
+    }
+  }, [entity]);
 
   const updateJournal = (id: string, field: string, value: string) => {
     setJournals((prev) =>
