@@ -70,8 +70,7 @@ export default function TaxSimPage() {
   const [salaryEntries, setSalaryEntries] = useState<SalaryEntry[]>([]);
 
   // 不動産所得
-  const [realEstateIncome, setRealEstateIncome] = useState("");
-  const [realEstateExpense, setRealEstateExpense] = useState("");
+  const [realEstateProfit, setRealEstateProfit] = useState("");
 
   // 所得控除
   const [socialInsurance, setSocialInsurance] = useState("");
@@ -80,15 +79,52 @@ export default function TaxSimPage() {
   const [medicalExpense, setMedicalExpense] = useState("");
   const [ideco, setIdeco] = useState("");
 
-  const fetchSalary = useCallback(async () => {
+  const [loaded, setLoaded] = useState(false);
+
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/salary");
-      const data = await res.json();
-      setSalaryEntries(data.entries || []);
+      const [salaryRes, simRes] = await Promise.all([
+        fetch("/api/salary"),
+        fetch("/api/tax-sim"),
+      ]);
+      const salaryData = await salaryRes.json();
+      setSalaryEntries(salaryData.entries || []);
+
+      const simData = await simRes.json();
+      if (simData.data) {
+        setRealEstateProfit(simData.data.real_estate_profit?.toString() || "");
+        setSocialInsurance(simData.data.social_insurance?.toString() || "");
+        setLifeInsurance(simData.data.life_insurance?.toString() || "");
+        setEarthquakeInsurance(simData.data.earthquake_insurance?.toString() || "");
+        setMedicalExpense(simData.data.medical_expense?.toString() || "");
+        setIdeco(simData.data.ideco?.toString() || "");
+      }
+      setLoaded(true);
     } catch {}
   }, []);
 
-  useEffect(() => { fetchSalary(); }, [fetchSalary]);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // 自動保存（値が変更されたとき）
+  useEffect(() => {
+    if (!loaded) return;
+    const timer = setTimeout(() => {
+      fetch("/api/tax-sim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year: 2025,
+          real_estate_profit: num(realEstateProfit),
+          social_insurance: num(socialInsurance),
+          life_insurance: num(lifeInsurance),
+          earthquake_insurance: num(earthquakeInsurance),
+          medical_expense: num(medicalExpense),
+          ideco: num(ideco),
+        }),
+      }).catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [loaded, realEstateProfit, socialInsurance, lifeInsurance, earthquakeInsurance, medicalExpense, ideco]);
 
   const num = (s: string) => parseInt(s.replace(/,/g, "") || "0", 10);
 
@@ -100,10 +136,10 @@ export default function TaxSimPage() {
   const salaryIncome = Math.max(0, totalSalary - salaryDeduction);
 
   // 不動産所得
-  const realEstateProfit = num(realEstateIncome) - num(realEstateExpense);
+  const realEstateProfitNum = num(realEstateProfit);
 
   // 総所得金額
-  const totalIncome = salaryIncome + Math.max(0, realEstateProfit);
+  const totalIncome = salaryIncome + Math.max(0, realEstateProfitNum);
 
   // 所得控除合計
   const basicDeduction = 480000; // 基礎控除
@@ -163,33 +199,15 @@ export default function TaxSimPage() {
           <CardTitle className="text-base">不動産所得</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label>不動産収入</Label>
-              <Input
-                inputMode="numeric"
-                value={realEstateIncome}
-                onChange={(e) => setRealEstateIncome(e.target.value)}
-                placeholder="0"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>必要経費</Label>
-              <Input
-                inputMode="numeric"
-                value={realEstateExpense}
-                onChange={(e) => setRealEstateExpense(e.target.value)}
-                placeholder="0"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>不動産所得</Label>
-              <div className="mt-1 rounded border bg-gray-50 px-3 py-2 font-mono">
-                {fmt(realEstateProfit)}
-              </div>
-            </div>
+          <div className="max-w-xs">
+            <Label>不動産所得（収入-経費の計算済み額）</Label>
+            <Input
+              inputMode="numeric"
+              value={realEstateProfit}
+              onChange={(e) => setRealEstateProfit(e.target.value)}
+              placeholder="0"
+              className="mt-1"
+            />
           </div>
         </CardContent>
       </Card>
