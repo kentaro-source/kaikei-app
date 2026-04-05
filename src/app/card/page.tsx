@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import AccountSelect from "@/components/AccountSelect";
+import MonthProgress from "@/components/MonthProgress";
 
 interface CardJournal {
   id: string;
@@ -93,6 +94,7 @@ export default function CardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">カード明細取込</h1>
+      <MonthProgress source="card" />
 
       <Card>
         <CardContent className="pt-6">

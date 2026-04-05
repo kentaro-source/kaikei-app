@@ -9,6 +9,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import AccountSelect from "@/components/AccountSelect";
+import MonthProgress from "@/components/MonthProgress";
 
 interface BankTransaction {
   date: string;
@@ -189,6 +190,7 @@ export default function BankbookPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">通帳取込</h1>
+      <MonthProgress source="bankbook" />
 
       {/* 設定 */}
       <Card>

@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import AccountSelect from "@/components/AccountSelect";
+import MonthProgress from "@/components/MonthProgress";
 
 interface ExpenseItem {
   name: string;
@@ -121,6 +122,7 @@ export default function WealthParkPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">WealthPark取込</h1>
+      <MonthProgress source="wealthpark" />
 
       {/* アップロードエリア */}
       <Card>
