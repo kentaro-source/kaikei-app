@@ -20,7 +20,7 @@ export interface JournalEntry {
 
 // 支出項目名 → 弥生の勘定科目マッピング
 const EXPENSE_ACCOUNT_MAP: Record<string, string> = {
-  "管理手数料": "管理費",
+  "管理手数料": "外注費",
   "水道料金": "水道光熱費",
   "電気料金（電灯）": "水道光熱費",
   "電気料金（電力）": "水道光熱費",
