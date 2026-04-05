@@ -152,7 +152,7 @@ export default function WealthParkPage() {
           <button onClick={() => setEntity("personal")} className={`rounded px-3 py-1 text-sm ${entity === "personal" ? "bg-green-500 text-white" : "bg-gray-200"}`}>個人</button>
         </div>
       </div>
-      <MonthProgress source={entity === "personal" ? "wealthpark_personal" : "wealthpark"} />
+      <MonthProgress source={entity === "personal" ? "wealthpark_personal" : "wealthpark"} showDate={false} />
 
       {/* アップロードエリア */}
       <Card>

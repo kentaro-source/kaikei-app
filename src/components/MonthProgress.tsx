@@ -11,10 +11,11 @@ interface MonthData {
 }
 
 interface MonthProgressProps {
-  source: "wealthpark" | "bankbook" | "card" | "all";
+  source: "wealthpark" | "wealthpark_personal" | "bankbook" | "card" | "all";
+  showDate?: boolean;
 }
 
-export default function MonthProgress({ source }: MonthProgressProps) {
+export default function MonthProgress({ source, showDate = true }: MonthProgressProps) {
   const [months, setMonths] = useState<MonthData[]>([]);
   const [period, setPeriod] = useState("");
 
@@ -59,7 +60,7 @@ export default function MonthProgress({ source }: MonthProgressProps) {
               {m.count > 0 ? (
                 <>
                   <span className="text-[10px]">{m.count}件</span>
-                  <span className="text-[9px] text-green-500">〜{shortDate}</span>
+                  {showDate && shortDate && <span className="text-[9px] text-green-500">〜{shortDate}</span>}
                 </>
               ) : (
                 <span className="text-[10px]">-</span>
