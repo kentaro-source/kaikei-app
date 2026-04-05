@@ -20,6 +20,8 @@ interface SalaryEntry {
   date: string;
   taxable_salary: number;
   income_tax: number;
+  health_insurance: number;
+  pension: number;
 }
 
 export default function SalaryPage() {
@@ -27,6 +29,8 @@ export default function SalaryPage() {
   const [date, setDate] = useState("");
   const [taxable, setTaxable] = useState("");
   const [tax, setTax] = useState("");
+  const [health, setHealth] = useState("");
+  const [pension, setPension] = useState("");
   const [entries, setEntries] = useState<SalaryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,12 +62,16 @@ export default function SalaryPage() {
           date,
           taxable_salary: taxableNum,
           income_tax: taxNum,
+          health_insurance: num(health),
+          pension: num(pension),
         }),
       });
       if (!res.ok) throw new Error("保存に失敗しました");
       fetchEntries();
       setTaxable("");
       setTax("");
+      setHealth("");
+      setPension("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました");
     }
@@ -157,6 +165,30 @@ export default function SalaryPage() {
               />
             </div>
           </div>
+          {employer === "株式会社DRK企画" && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>健康保険料</Label>
+                <Input
+                  inputMode="numeric"
+                  value={health}
+                  onChange={(e) => setHealth(e.target.value)}
+                  placeholder="0"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>厚生年金</Label>
+                <Input
+                  inputMode="numeric"
+                  value={pension}
+                  onChange={(e) => setPension(e.target.value)}
+                  placeholder="0"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          )}
           <Button onClick={handleAdd} size="sm">追加</Button>
           {error && <p className="text-sm text-red-500">{error}</p>}
         </CardContent>
@@ -176,17 +208,21 @@ export default function SalaryPage() {
                   <th className="pb-2">勤務先</th>
                   <th className="pb-2">支給日</th>
                   <th className="pb-2 text-right">課税支給額</th>
-                  <th className="pb-2 text-right">源泉徴収税額</th>
+                  <th className="pb-2 text-right">源泉徴収</th>
+                  <th className="pb-2 text-right">健保</th>
+                  <th className="pb-2 text-right">厚年</th>
                   <th className="pb-2"></th>
                 </tr>
               </thead>
               <tbody>
-                {entries.map((e, i) => (
+                {entries.map((e) => (
                   <tr key={e.id} className="border-b">
                     <td className="py-2">{e.employer}</td>
                     <td className="py-2">{e.date}</td>
                     <td className="py-2 text-right font-mono">{e.taxable_salary.toLocaleString()}</td>
                     <td className="py-2 text-right font-mono">{e.income_tax.toLocaleString()}</td>
+                    <td className="py-2 text-right font-mono">{e.health_insurance ? e.health_insurance.toLocaleString() : ""}</td>
+                    <td className="py-2 text-right font-mono">{e.pension ? e.pension.toLocaleString() : ""}</td>
                     <td className="py-2">
                       <button onClick={() => handleRemove(e.id)} className="text-xs text-red-400 hover:text-red-600">削除</button>
                     </td>
@@ -197,6 +233,8 @@ export default function SalaryPage() {
                   <td></td>
                   <td className="pt-2 text-right font-mono">{totalTaxable.toLocaleString()}</td>
                   <td className="pt-2 text-right font-mono">{totalTax.toLocaleString()}</td>
+                  <td className="pt-2 text-right font-mono">{entries.reduce((s, e) => s + (e.health_insurance || 0), 0) || ""}</td>
+                  <td className="pt-2 text-right font-mono">{entries.reduce((s, e) => s + (e.pension || 0), 0) || ""}</td>
                   <td></td>
                 </tr>
               </tbody>

@@ -12,6 +12,8 @@ function ensureTable() {
       date TEXT NOT NULL,
       taxable_salary INTEGER NOT NULL,
       income_tax INTEGER NOT NULL DEFAULT 0,
+      health_insurance INTEGER NOT NULL DEFAULT 0,
+      pension INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     )
   `);
@@ -40,8 +42,8 @@ export async function POST(request: NextRequest) {
 
     const id = uuidv4();
     db.prepare(
-      "INSERT INTO salary_entries (id, employer, date, taxable_salary, income_tax) VALUES (?, ?, ?, ?, ?)"
-    ).run(id, employer, date, taxable_salary, income_tax || 0);
+      "INSERT INTO salary_entries (id, employer, date, taxable_salary, income_tax, health_insurance, pension) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    ).run(id, employer, date, taxable_salary, income_tax || 0, body.health_insurance || 0, body.pension || 0);
 
     const entry = db.prepare("SELECT * FROM salary_entries WHERE id = ?").get(id);
     return NextResponse.json({ entry });
