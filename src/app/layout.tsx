@@ -60,10 +60,16 @@ export default function RootLayout({
                 会計アシスタント
               </Link>
               <Link href="/wealthpark" className="text-sm hover:underline">
-                WealthPark取込
+                家賃
+              </Link>
+              <Link href="/bankbook" className="text-sm hover:underline">
+                通帳
+              </Link>
+              <Link href="/card" className="text-sm hover:underline">
+                カード
               </Link>
               <Link href="/upload" className="text-sm hover:underline">
-                アップロード
+                給与
               </Link>
               <Link href="/export" className="text-sm hover:underline">
                 CSV出力

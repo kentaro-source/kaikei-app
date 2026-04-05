@@ -3,6 +3,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import path from "path";
 import fs from "fs";
 
+// Claude APIの応答に時間がかかるため
+export const maxDuration = 120;
+
 const UPLOAD_DIR = path.join(process.cwd(), "data", "uploads");
 
 const RENT_PROMPT = `これは不動産管理会社が作成した「家賃支払精算書」のスキャン画像です。
@@ -42,16 +45,43 @@ const SALARY_PROMPT = `この給与明細の画像を読み取り、以下の項
 
 JSONのみ返してください。説明不要です。`;
 
-const BANKBOOK_PROMPT = `この通帳の画像を読み取り、全取引を以下のJSON配列で返してください。
-数値は数字のみ（カンマなし）で返してください。
+const BANKBOOK_PROMPT = `これは日本の銀行通帳（普通預金）のスキャン画像です。全取引を正確に読み取ってJSON配列で返してください。
+
+■ 年月日の変換ルール：
+通帳の年月日は「YY-MM-DD」形式で、YYは令和の年号です。
+- 07 → 2025年（令和7年）
+- 08 → 2026年（令和8年）
+例：07-12-15 → 2025/12/15
+
+■ 入出金の判別ルール（最重要）：
+通帳には3つの金額列があります：
+1. 左列「お支払金額」= 出金（withdrawal）：口座から出ていくお金
+2. 中列「お預り金額」= 入金（deposit）：口座に入ってくるお金
+3. 右列「差引残高」= 残高（balance）
+
+判別方法：
+- 前の行の残高より増えていれば → その行は入金（deposit）
+- 前の行の残高より減っていれば → その行は出金（withdrawal）
+- 「振込」で始まる摘要は入金であることが多い（他者からの振込入金）
+- 「200」という記号の後に続く取引は口座引落（出金）であることが多い
+
+■ 摘要の読み取りルール：
+- 半角カタカナをそのまま正確に転記してください
+- 「振込カ)」「振込ミヤザキ」等の振込名は正確に
+- 「200」は記号番号なので摘要に含めないでください
+- ダブルクォートやバックスラッシュは使わず、そのまま半角カタカナで記載
+
+■ 数値ルール：
+- カンマなしの整数で返してください
+- *（アスタリスク）は無視してください
 
 [
   {
     "date": "YYYY/MM/DD",
-    "description": "摘要（振込先名や内容）",
-    "withdrawal": 支払金額（出金、なければ0）,
-    "deposit": 預り金額（入金、なければ0）,
-    "balance": 差引残高（数値）
+    "description": "摘要テキスト（200は除く）",
+    "withdrawal": 出金額（入金の場合は0）,
+    "deposit": 入金額（出金の場合は0）,
+    "balance": 差引残高
   }
 ]
 
@@ -128,7 +158,13 @@ export async function POST(request: NextRequest) {
       let jsonStr = textContent.text.trim();
       const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (jsonMatch) jsonStr = jsonMatch[1].trim();
-      const parsed = JSON.parse(jsonStr);
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonStr);
+      } catch {
+        const fixed = jsonStr.replace(/\\"/g, "'").replace(/[\x00-\x1F]/g, "");
+        parsed = JSON.parse(fixed);
+      }
       return NextResponse.json({ parsed: Array.isArray(parsed) ? parsed[0] : parsed, raw_response: textContent.text });
     }
 
@@ -166,7 +202,22 @@ export async function POST(request: NextRequest) {
       jsonStr = jsonMatch[1].trim();
     }
 
-    const parsed = JSON.parse(jsonStr);
+    // JSONパース（エラー時は修復を試みる）
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      // 半角カタカナの濁点等でJSONが壊れる場合がある
+      // バックスラッシュ+ダブルクォートの修復
+      const fixed = jsonStr
+        .replace(/\\"/g, "'")
+        .replace(/[\x00-\x1F]/g, "");
+      try {
+        parsed = JSON.parse(fixed);
+      } catch (e2) {
+        return NextResponse.json({ error: (e2 as Error).message }, { status: 500 });
+      }
+    }
 
     return NextResponse.json({ parsed, raw_response: textContent.text });
   } catch (error) {

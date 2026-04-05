@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import AccountSelect from "@/components/AccountSelect";
 
 interface ExpenseItem {
   name: string;
@@ -54,6 +55,12 @@ export default function WealthParkPage() {
   const [report, setReport] = useState<ReportData | null>(null);
   const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [saved, setSaved] = useState(false);
+
+  const updateJournal = (id: string, field: string, value: string) => {
+    setJournals((prev) =>
+      prev.map((j) => (j.id === id ? { ...j, [field]: value } : j))
+    );
+  };
 
   const handleUpload = useCallback(async (file: File) => {
     setLoading(true);
@@ -210,9 +217,13 @@ export default function WealthParkPage() {
                 {journals.map((j) => (
                   <TableRow key={j.id}>
                     <TableCell className="text-xs">{j.date}</TableCell>
-                    <TableCell className="text-xs">{j.debit_account}</TableCell>
+                    <TableCell className="text-xs">
+                      <AccountSelect value={j.debit_account} onChange={(v) => updateJournal(j.id, "debit_account", v)} />
+                    </TableCell>
                     <TableCell className="text-xs text-gray-500">{j.debit_sub_account}</TableCell>
-                    <TableCell className="text-xs">{j.credit_account}</TableCell>
+                    <TableCell className="text-xs">
+                      <AccountSelect value={j.credit_account} onChange={(v) => updateJournal(j.id, "credit_account", v)} />
+                    </TableCell>
                     <TableCell className="text-xs text-gray-500">{j.credit_sub_account}</TableCell>
                     <TableCell className="text-right text-xs font-mono">{j.amount.toLocaleString()}</TableCell>
                     <TableCell className="text-xs">{j.description}</TableCell>
