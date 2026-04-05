@@ -94,11 +94,12 @@ const JOURNAL_RULES: {
   sub_account?: string;
   label: string;
 }[] = [
-  // 入金
+  // 入金 - 産業医収入
   {
-    keywords: ["ﾐﾔｻﾞｷｾﾝｶ", "ミヤサキセンカ", "ミヤザキセンカ", "宮崎千果"],
+    keywords: ["ﾐﾔｻﾞｷｾﾝｶ", "ミヤサキセンカ", "ミヤザキセンカ", "宮崎千果", "ﾐﾔｻﾞｷ", "ｷｾﾝﾉﾘ", "ｷﾋﾟｶﾌ"],
     debit_account: "普通預金",
     credit_account: "産業医収入",
+    sub_account: "宮崎千果",
     label: "産業医収入",
   },
   // 出金 - ローン返済
@@ -123,7 +124,7 @@ const JOURNAL_RULES: {
   },
   // 出金 - 社会保険料（複数仕訳を生成）
   {
-    keywords: ["ホケン", "ﾎｹﾝ", "保険", "ｼｬｶｲﾎｹﾝ"],
+    keywords: ["ホケン", "ﾎｹﾝ", "保険", "ｼｬｶｲﾎｹﾝ", "ヨコサイ", "ﾖｺｻｲ", "ｺｻｲ"],
     debit_account: "__social_insurance__",
     credit_account: "普通預金",
     label: "社会保険料",
@@ -146,8 +147,26 @@ const JOURNAL_RULES: {
 ];
 
 function matchesKeywords(description: string, keywords: string[]): boolean {
-  const upper = description.toUpperCase();
-  return keywords.some((kw) => upper.includes(kw.toUpperCase()));
+  const cleaned = cleanDescription(description).toUpperCase();
+  return keywords.some((kw) => cleaned.includes(kw.toUpperCase()));
+}
+
+/** 摘要から先頭の金額混入を除去 */
+function cleanDescription(desc: string): string {
+  return desc.replace(/^[\d,]+/, "").trim();
+}
+
+const BANK_SUB_ACCOUNT = "宮崎太陽銀行";
+
+/** 普通預金の補助科目を設定 */
+function setBankSubAccount(journal: BankJournalEntry): BankJournalEntry {
+  if (journal.debit_account === "普通預金") {
+    journal.debit_sub_account = BANK_SUB_ACCOUNT;
+  }
+  if (journal.credit_account === "普通預金") {
+    journal.credit_sub_account = BANK_SUB_ACCOUNT;
+  }
+  return journal;
 }
 
 /** 通帳取引を仕訳ルールに照合 */
@@ -173,7 +192,7 @@ export function processBankTransactions(
             return {
               transaction: t,
               action: "journal" as const,
-              journals: generateSocialInsuranceJournals(t),
+              journals: generateSocialInsuranceJournals(t).map(setBankSubAccount),
             };
           }
 
@@ -181,7 +200,7 @@ export function processBankTransactions(
           return {
             transaction: t,
             action: "journal" as const,
-            journal: {
+            journal: setBankSubAccount({
               id: uuidv4(),
               date: t.date,
               debit_account: rule.debit_account,
@@ -189,8 +208,8 @@ export function processBankTransactions(
               credit_account: rule.credit_account,
               credit_sub_account: "",
               amount,
-              description: `${rule.label} ${t.description}`,
-            },
+              description: `${rule.label} ${cleanDescription(t.description)}`,
+            }),
           };
         }
       }
@@ -200,7 +219,7 @@ export function processBankTransactions(
       return {
         transaction: t,
         action: "journal" as const,
-        journal: {
+        journal: setBankSubAccount({
           id: uuidv4(),
           date: t.date,
           debit_account: t.deposit > 0 ? "普通預金" : "【要確認】",
@@ -208,8 +227,8 @@ export function processBankTransactions(
           credit_account: t.deposit > 0 ? "【要確認】" : "普通預金",
           credit_sub_account: "",
           amount,
-          description: t.description,
-        },
+          description: cleanDescription(t.description),
+        }),
       };
     });
 }

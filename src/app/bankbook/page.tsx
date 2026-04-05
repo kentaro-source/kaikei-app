@@ -206,7 +206,9 @@ export default function BankbookPage() {
                   <TableRow>
                     <TableHead>日付</TableHead>
                     <TableHead>借方</TableHead>
+                    <TableHead>補助</TableHead>
                     <TableHead>貸方</TableHead>
+                    <TableHead>補助</TableHead>
                     <TableHead className="text-right">金額</TableHead>
                     <TableHead>摘要</TableHead>
                   </TableRow>
@@ -218,9 +220,11 @@ export default function BankbookPage() {
                       <TableCell className="text-xs">
                         <AccountSelect value={j.debit_account} onChange={(v) => updateJournal(j.id, "debit_account", v)} />
                       </TableCell>
+                      <TableCell className="text-xs text-gray-500">{j.debit_sub_account}</TableCell>
                       <TableCell className="text-xs">
                         <AccountSelect value={j.credit_account} onChange={(v) => updateJournal(j.id, "credit_account", v)} />
                       </TableCell>
+                      <TableCell className="text-xs text-gray-500">{j.credit_sub_account}</TableCell>
                       <TableCell className="text-right text-xs font-mono">{j.amount.toLocaleString()}</TableCell>
                       <TableCell className="text-xs">{j.description}</TableCell>
                     </TableRow>
