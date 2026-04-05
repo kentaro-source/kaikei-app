@@ -27,6 +27,13 @@ export async function GET(request: NextRequest) {
       conditions.push("exported = 0");
     }
 
+    const entity = searchParams.get("entity");
+    if (entity === "corporate") {
+      conditions.push("(source IS NULL OR source != 'wealthpark_personal')");
+    } else if (entity === "personal") {
+      conditions.push("source = 'wealthpark_personal'");
+    }
+
     if (conditions.length > 0) {
       query += " WHERE " + conditions.join(" AND ");
     }

@@ -26,6 +26,7 @@ interface JournalEntry {
 
 export default function ExportPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [entityFilter, setEntityFilter] = useState<"corporate" | "personal" | "all">("corporate");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,6 +40,7 @@ export default function ExportPage() {
       if (from) params.set("from", from.replace(/-/g, "/"));
       if (to) params.set("to", to.replace(/-/g, "/"));
       params.set("unexported", "1");
+      if (entityFilter !== "all") params.set("entity", entityFilter);
 
       const res = await fetch(`/api/export?${params}`);
       const data = await res.json();
@@ -131,7 +133,14 @@ export default function ExportPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">弥生CSV出力</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-2xl font-bold">弥生CSV出力</h1>
+        <div className="flex gap-1">
+          <button onClick={() => { setEntityFilter("corporate"); }} className={`rounded px-3 py-1 text-sm ${entityFilter === "corporate" ? "bg-blue-500 text-white" : "bg-gray-200"}`}>法人</button>
+          <button onClick={() => { setEntityFilter("personal"); }} className={`rounded px-3 py-1 text-sm ${entityFilter === "personal" ? "bg-green-500 text-white" : "bg-gray-200"}`}>個人</button>
+          <button onClick={() => { setEntityFilter("all"); }} className={`rounded px-3 py-1 text-sm ${entityFilter === "all" ? "bg-gray-500 text-white" : "bg-gray-200"}`}>全て</button>
+        </div>
+      </div>
 
       <Card>
         <CardHeader>

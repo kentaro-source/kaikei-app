@@ -50,6 +50,7 @@ interface JournalEntry {
 }
 
 export default function WealthParkPage() {
+  const [entity, setEntity] = useState<"corporate" | "personal">("corporate");
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +110,7 @@ export default function WealthParkPage() {
       const res = await fetch("/api/wealthpark/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ journals, source: "wealthpark" }),
+        body: JSON.stringify({ journals, source: entity === "personal" ? "wealthpark_personal" : "wealthpark" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -121,8 +122,14 @@ export default function WealthParkPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">WealthPark取込</h1>
-      <MonthProgress source="wealthpark" />
+      <div className="flex items-center gap-4">
+        <h1 className="text-2xl font-bold">WealthPark取込</h1>
+        <div className="flex gap-1">
+          <button onClick={() => setEntity("corporate")} className={`rounded px-3 py-1 text-sm ${entity === "corporate" ? "bg-blue-500 text-white" : "bg-gray-200"}`}>法人</button>
+          <button onClick={() => setEntity("personal")} className={`rounded px-3 py-1 text-sm ${entity === "personal" ? "bg-green-500 text-white" : "bg-gray-200"}`}>個人</button>
+        </div>
+      </div>
+      <MonthProgress source={entity === "personal" ? "wealthpark_personal" : "wealthpark"} />
 
       {/* アップロードエリア */}
       <Card>
