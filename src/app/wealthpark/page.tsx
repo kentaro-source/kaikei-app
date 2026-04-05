@@ -280,16 +280,16 @@ export default function WealthParkPage() {
                 return acc;
               }, {})
             ).map(([prop, list]) => {
-              // 部屋ごとに集約（月額=直近、年間=合計）
-              const byRoom = list.reduce<Record<string, { tenant_name: string; monthly: number; annual: number; months: number }>>((acc, t) => {
-                if (!acc[t.room]) acc[t.room] = { tenant_name: t.tenant_name, monthly: 0, annual: 0, months: 0 };
-                acc[t.room].tenant_name = t.tenant_name;
-                acc[t.room].monthly = t.total; // 最新月額
-                acc[t.room].annual += t.total;
-                acc[t.room].months++;
+              // 部屋+入居者ごとに集約
+              const byRoomTenant = list.reduce<Record<string, { room: string; tenant_name: string; monthly: number; annual: number; months: number }>>((acc, t) => {
+                const key = `${t.room}_${t.tenant_name}`;
+                if (!acc[key]) acc[key] = { room: t.room, tenant_name: t.tenant_name, monthly: 0, annual: 0, months: 0 };
+                acc[key].monthly = t.total;
+                acc[key].annual += t.total;
+                acc[key].months++;
                 return acc;
               }, {});
-              const annualTotal = Object.values(byRoom).reduce((s, r) => s + r.annual, 0);
+              const annualTotal = Object.values(byRoomTenant).reduce((s, r) => s + r.annual, 0);
 
               return (
                 <div key={prop} className="mb-4">
@@ -304,9 +304,9 @@ export default function WealthParkPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(byRoom).sort(([a], [b]) => a.localeCompare(b)).map(([room, data]) => (
-                        <tr key={room} className="border-b">
-                          <td className="py-1">{room}</td>
+                      {Object.values(byRoomTenant).sort((a, b) => a.room.localeCompare(b.room)).map((data) => (
+                        <tr key={`${data.room}_${data.tenant_name}`} className="border-b">
+                          <td className="py-1">{data.room}</td>
                           <td className="py-1">{data.tenant_name}</td>
                           <td className="py-1 text-right font-mono">{data.monthly.toLocaleString()}</td>
                           <td className="py-1 text-right font-mono">{data.annual.toLocaleString()}</td>
