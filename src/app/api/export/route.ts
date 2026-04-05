@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, JournalEntry } from "@/lib/db";
 import { generateYayoiCsv } from "@/lib/yayoiCsv";
+import iconv from "iconv-lite";
 
 export async function GET(request: NextRequest) {
   try {
@@ -82,9 +83,12 @@ export async function POST(request: NextRequest) {
       updateStmt.run(entry.id);
     }
 
-    return new NextResponse(csv, {
+    // Shift_JISに変換（弥生会計はShift_JISを要求）
+    const sjisBuffer = iconv.encode(csv, "Shift_JIS");
+
+    return new NextResponse(sjisBuffer, {
       headers: {
-        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Type": "text/csv; charset=Shift_JIS",
         "Content-Disposition": `attachment; filename="yayoi_import_${new Date().toISOString().slice(0, 10)}.csv"`,
       },
     });
