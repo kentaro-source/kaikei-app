@@ -54,10 +54,8 @@ export function wealthParkToJournals(
   const d = date || `${property.settlement_month}/15`; // デフォルトは15日
   const prop = property.property_name;
 
-  // === 収入の仕訳 ===
-
-  // 賃貸料
-  if (property.income.rent > 0) {
+  // === 収入の仕訳（賃貸料・共益費・駐車料・その他をまとめて売上高） ===
+  if (property.income.total > 0) {
     entries.push({
       id: uuidv4(),
       date: d,
@@ -65,50 +63,8 @@ export function wealthParkToJournals(
       debit_sub_account: "",
       credit_account: "売上高",
       credit_sub_account: prop,
-      amount: property.income.rent,
-      description: `${prop} 賃貸料`,
-    });
-  }
-
-  // 共益費
-  if (property.income.common_fee > 0) {
-    entries.push({
-      id: uuidv4(),
-      date: d,
-      debit_account: "普通預金",
-      debit_sub_account: "",
-      credit_account: "売上高",
-      credit_sub_account: prop,
-      amount: property.income.common_fee,
-      description: `${prop} 共益費`,
-    });
-  }
-
-  // 駐車料
-  if (property.income.parking > 0) {
-    entries.push({
-      id: uuidv4(),
-      date: d,
-      debit_account: "普通預金",
-      debit_sub_account: "",
-      credit_account: "売上高",
-      credit_sub_account: prop,
-      amount: property.income.parking,
-      description: `${prop} 駐車料`,
-    });
-  }
-
-  // その他収入
-  if (property.income.other > 0) {
-    entries.push({
-      id: uuidv4(),
-      date: d,
-      debit_account: "普通預金",
-      debit_sub_account: "",
-      credit_account: "売上高",
-      credit_sub_account: prop,
-      amount: property.income.other,
-      description: `${prop} その他収入`,
+      amount: property.income.total,
+      description: `${prop} 賃貸収入`,
     });
   }
 
