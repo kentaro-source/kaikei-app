@@ -57,6 +57,7 @@ export default function WealthParkPage() {
   const [report, setReport] = useState<ReportData | null>(null);
   const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [saved, setSaved] = useState(false);
+  const [tenants, setTenants] = useState<{ property_name: string; room: string; tenant_name: string; month: string; total: number }[]>([]);
 
   const updateJournal = (id: string, field: string, value: string) => {
     setJournals((prev) =>
@@ -80,6 +81,16 @@ export default function WealthParkPage() {
       if (!res.ok) throw new Error(data.error);
 
       setReport(data.report);
+
+      // 入居者情報を保存（個人モードのみ）
+      if (entity === "personal" && data.tenants && data.tenants.length > 0) {
+        setTenants(data.tenants);
+        await fetch("/api/tenants", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tenants: data.tenants }),
+        });
+      }
 
       // 仕訳を生成
       const jRes = await fetch("/api/wealthpark/journals", {
@@ -240,6 +251,45 @@ export default function WealthParkPage() {
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+      )}
+      {/* 入居者一覧（個人モード・プチマリアのみ） */}
+      {tenants.length > 0 && entity === "personal" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">入居者一覧（確定申告用）</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {Object.entries(
+              tenants.reduce<Record<string, typeof tenants>>((acc, t) => {
+                if (!acc[t.property_name]) acc[t.property_name] = [];
+                acc[t.property_name].push(t);
+                return acc;
+              }, {})
+            ).map(([prop, list]) => (
+              <div key={prop} className="mb-4">
+                <h3 className="mb-1 font-bold text-sm">{prop}</h3>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs text-gray-500">
+                      <th className="pb-1">部屋</th>
+                      <th className="pb-1">契約者</th>
+                      <th className="pb-1 text-right">月額（税込）</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {list.map((t, i) => (
+                      <tr key={i} className="border-b">
+                        <td className="py-1">{t.room}</td>
+                        <td className="py-1">{t.tenant_name}</td>
+                        <td className="py-1 text-right font-mono">{t.total.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

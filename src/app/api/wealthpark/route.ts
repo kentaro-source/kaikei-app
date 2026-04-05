@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseWealthParkPdf } from "@/lib/wealthparkParser";
+import { parseWealthParkPdf, extractTenants } from "@/lib/wealthparkParser";
 import path from "path";
 import fs from "fs";
 
@@ -29,7 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "物件データが見つかりませんでした" }, { status: 400 });
     }
 
-    return NextResponse.json({ report });
+    // 入居者情報を抽出
+    const tenants = extractTenants(pdfData.text, report.month);
+
+    return NextResponse.json({ report, tenants });
   } catch (error) {
     console.error("WealthPark parse error:", error);
     return NextResponse.json({ error: "PDFの解析に失敗しました" }, { status: 500 });

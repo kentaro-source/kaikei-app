@@ -28,8 +28,63 @@ export interface WealthParkReport {
   properties: WealthParkProperty[];
 }
 
+export interface TenantEntry {
+  property_name: string;
+  room: string;
+  tenant_name: string;
+  month: string;
+  total: number;
+}
+
 function parseNum(s: string): number {
   return parseInt(s.replace(/,/g, ""), 10) || 0;
+}
+
+/** 収入明細ページから入居者情報を抽出 */
+function parseTenantPage(pageText: string, month: string): TenantEntry[] {
+  if (!pageText.includes("保有物件の収入明細")) return [];
+
+  const nameMatch = pageText.match(/大興土地建物管理\n(.+?)\n/);
+  if (!nameMatch) return [];
+  const propertyName = nameMatch[1].trim();
+  if (EXCLUDED_PROPERTIES.some((ex) => propertyName.includes(ex))) return [];
+
+  const tenants: TenantEntry[] = [];
+  // 「部屋 契約者 対象月 ... 合計」の行をパース
+  const lines = pageText.split("\n");
+  for (const line of lines) {
+    // 部屋番号(3桁)で始まる行を探す
+    const m = line.match(/^(\d{3})\s*(.+?)\s*(\d{4}\/\d{2})\s*([\d,]+(?:\s+[\d,]+)*)\s*$/);
+    if (!m) continue;
+
+    const room = m[1];
+    const tenant = m[2].trim();
+    // 合計は行末の数値
+    const nums = m[4].match(/[\d,]+/g) || [];
+    const total = nums.length > 0 ? parseNum(nums[nums.length - 1]) : 0;
+
+    if (tenant && total > 0 && !tenant.includes("収入合計")) {
+      tenants.push({
+        property_name: propertyName,
+        room,
+        tenant_name: tenant,
+        month,
+        total,
+      });
+    }
+  }
+
+  return tenants;
+}
+
+/** PDFテキストから全物件の入居者情報を抽出 */
+export function extractTenants(text: string, month: string): TenantEntry[] {
+  const pages = text.split(/\n\d+\n/);
+  const allTenants: TenantEntry[] = [];
+  for (const page of pages) {
+    allTenants.push(...parseTenantPage(page, month));
+  }
+  return allTenants;
 }
 
 // ========== 年次収支報告書パーサー ==========
@@ -196,6 +251,9 @@ export function parseWealthParkAnnualPdf(text: string): WealthParkAnnualReport {
   return report;
 }
 
+// 除外する物件名
+const EXCLUDED_PROPERTIES = ["グリーンゲーブルズ"];
+
 /** 1ページ分のテキストから物件データを抽出 */
 function parsePropertyPage(pageText: string, month: string): WealthParkProperty | null {
   // 「保有物件の収入‧支出情報」を含むページのみ処理
@@ -206,6 +264,7 @@ function parsePropertyPage(pageText: string, month: string): WealthParkProperty 
   if (!nameMatch) return null;
   const propertyName = nameMatch[1].trim();
   if (propertyName.includes("全保有物件")) return null;
+  if (EXCLUDED_PROPERTIES.some((ex) => propertyName.includes(ex))) return null;
 
   const property: WealthParkProperty = {
     property_name: propertyName,

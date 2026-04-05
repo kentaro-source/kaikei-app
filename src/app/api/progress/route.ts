@@ -24,25 +24,42 @@ export async function GET(request: NextRequest) {
       ORDER BY month
     `).all(...params) as { month: string; count: number; total: number; first_date: string; last_date: string }[];
 
-    // 期の月リスト（12月〜11月）
+    // 個人は暦年（1月〜12月）、法人は12月〜11月
+    const isPersonal = source === "wealthpark_personal";
     const now = new Date();
-    const currentYear = now.getMonth() >= 11 ? now.getFullYear() : now.getFullYear() - 1;
     const months = [];
-    for (let i = 0; i < 12; i++) {
-      const m = ((11 + i) % 12) + 1;
-      const y = m === 12 ? currentYear : currentYear + 1;
-      const monthStr = `${y}/${String(m).padStart(2, "0")}`;
-      const found = monthRows.find((r) => r.month === monthStr);
-      months.push({
-        month: monthStr,
-        count: found?.count || 0,
-        total: found?.total || 0,
-        first_date: found?.first_date || "",
-        last_date: found?.last_date || "",
-      });
-    }
 
-    return NextResponse.json({ months, period: `${currentYear}/12 〜 ${currentYear + 1}/11` });
+    if (isPersonal) {
+      const year = now.getFullYear();
+      for (let m = 1; m <= 12; m++) {
+        const monthStr = `${year}/${String(m).padStart(2, "0")}`;
+        const found = monthRows.find((r) => r.month === monthStr);
+        months.push({
+          month: monthStr,
+          count: found?.count || 0,
+          total: found?.total || 0,
+          first_date: found?.first_date || "",
+          last_date: found?.last_date || "",
+        });
+      }
+      return NextResponse.json({ months, period: `${year}年（暦年）` });
+    } else {
+      const currentYear = now.getMonth() >= 11 ? now.getFullYear() : now.getFullYear() - 1;
+      for (let i = 0; i < 12; i++) {
+        const m = ((11 + i) % 12) + 1;
+        const y = m === 12 ? currentYear : currentYear + 1;
+        const monthStr = `${y}/${String(m).padStart(2, "0")}`;
+        const found = monthRows.find((r) => r.month === monthStr);
+        months.push({
+          month: monthStr,
+          count: found?.count || 0,
+          total: found?.total || 0,
+          first_date: found?.first_date || "",
+          last_date: found?.last_date || "",
+        });
+      }
+      return NextResponse.json({ months, period: `${currentYear}/12 〜 ${currentYear + 1}/11` });
+    }
   } catch (error) {
     console.error("Progress error:", error);
     return NextResponse.json({ error: "進捗取得に失敗しました" }, { status: 500 });
