@@ -96,7 +96,7 @@ export default function WealthParkPage() {
       const jRes = await fetch("/api/wealthpark/journals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ properties: data.report.properties }),
+        body: JSON.stringify({ properties: data.report.properties, isPersonal: entity === "personal" }),
       });
       const jData = await jRes.json();
       if (!jRes.ok) throw new Error(jData.error);

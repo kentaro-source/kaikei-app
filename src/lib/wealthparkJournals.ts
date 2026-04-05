@@ -18,8 +18,8 @@ export interface JournalEntry {
   description: string;
 }
 
-// 支出項目名 → 弥生の勘定科目マッピング
-const EXPENSE_ACCOUNT_MAP: Record<string, string> = {
+// 法人の支出項目 → 勘定科目マッピング
+const EXPENSE_ACCOUNT_MAP_CORPORATE: Record<string, string> = {
   "管理手数料": "外注費",
   "水道料金": "水道光熱費",
   "電気料金（電灯）": "水道光熱費",
@@ -30,11 +30,24 @@ const EXPENSE_ACCOUNT_MAP: Record<string, string> = {
   "網戸貼り替え（大）": "修繕費",
 };
 
-function getExpenseAccount(name: string): string {
+// 個人の支出項目 → 勘定科目マッピング（収支内訳書準拠）
+const EXPENSE_ACCOUNT_MAP_PERSONAL: Record<string, string> = {
+  "管理手数料": "外注管理費",
+  "水道料金": "水道光熱費",
+  "電気料金（電灯）": "水道光熱費",
+  "電気料金（電力）": "水道光熱費",
+  "エレベータ保守料": "修繕費",
+  "別借駐車場代": "地代家賃",
+  "網戶貼り替え（大）": "修繕費",
+  "網戸貼り替え（大）": "修繕費",
+};
+
+function getExpenseAccount(name: string, isPersonal = false): string {
+  const map = isPersonal ? EXPENSE_ACCOUNT_MAP_PERSONAL : EXPENSE_ACCOUNT_MAP_CORPORATE;
   // 完全一致
-  if (EXPENSE_ACCOUNT_MAP[name]) return EXPENSE_ACCOUNT_MAP[name];
+  if (map[name]) return map[name];
   // 部分一致
-  for (const [key, account] of Object.entries(EXPENSE_ACCOUNT_MAP)) {
+  for (const [key, account] of Object.entries(map)) {
     if (name.includes(key)) return account;
   }
   // 電気・水道系
@@ -48,20 +61,22 @@ function getExpenseAccount(name: string): string {
 /** WealthPark物件データ → 仕訳配列 */
 export function wealthParkToJournals(
   property: WealthParkProperty,
-  date?: string
+  date?: string,
+  isPersonal = false
 ): JournalEntry[] {
   const entries: JournalEntry[] = [];
   const d = date || `${property.settlement_month}/15`; // デフォルトは15日
   const prop = property.property_name;
 
-  // === 収入の仕訳（賃貸料・共益費・駐車料・その他をまとめて売上高） ===
+  // === 収入の仕訳 ===
+  const incomeAccount = isPersonal ? "賃貸料" : "売上高";
   if (property.income.total > 0) {
     entries.push({
       id: uuidv4(),
       date: d,
       debit_account: "普通預金",
       debit_sub_account: "",
-      credit_account: "売上高",
+      credit_account: incomeAccount,
       credit_sub_account: prop,
       amount: property.income.total,
       description: `${prop} 賃貸収入`,
@@ -70,7 +85,7 @@ export function wealthParkToJournals(
 
   // === 支出の仕訳 ===
   for (const item of property.expense.items) {
-    const account = getExpenseAccount(item.name);
+    const account = getExpenseAccount(item.name, isPersonal);
     entries.push({
       id: uuidv4(),
       date: d,
