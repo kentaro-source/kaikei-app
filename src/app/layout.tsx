@@ -59,11 +59,11 @@ export default function RootLayout({
               <Link href="/" className="text-lg font-bold">
                 会計アシスタント
               </Link>
+              <Link href="/wealthpark" className="text-sm hover:underline">
+                WealthPark取込
+              </Link>
               <Link href="/upload" className="text-sm hover:underline">
                 アップロード
-              </Link>
-              <Link href="/templates" className="text-sm hover:underline">
-                テンプレート
               </Link>
               <Link href="/export" className="text-sm hover:underline">
                 CSV出力

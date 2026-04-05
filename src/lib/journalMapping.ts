@@ -36,31 +36,45 @@ export function rentStatementToJournals(
     });
   }
 
-  // 管理費（経費として借方）
+  // 電気料金
+  if (data.electricity) {
+    entries.push({
+      id: uuidv4(),
+      date: month,
+      debit_account: "水道光熱費",
+      debit_sub_account: "",
+      credit_account: "賃貸料",
+      credit_sub_account: "",
+      amount: data.electricity,
+      description: `${prefix}電気料金`,
+    });
+  }
+
+  // 管理手数料（税抜）
   if (data.management_fee) {
     entries.push({
       id: uuidv4(),
       date: month,
       debit_account: "管理費",
       debit_sub_account: "",
-      credit_account: "普通預金",
+      credit_account: "賃貸料",
       credit_sub_account: "",
       amount: data.management_fee,
-      description: `${prefix}管理費`,
+      description: `${prefix}管理手数料`,
     });
   }
 
-  // 修繕積立金
-  if (data.repair_reserve) {
+  // 管理手数料の消費税
+  if (data.management_fee_tax) {
     entries.push({
       id: uuidv4(),
       date: month,
-      debit_account: "修繕費",
+      debit_account: "仮払消費税",
       debit_sub_account: "",
-      credit_account: "普通預金",
+      credit_account: "賃貸料",
       credit_sub_account: "",
-      amount: data.repair_reserve,
-      description: `${prefix}修繕積立金`,
+      amount: data.management_fee_tax,
+      description: `${prefix}管理手数料 消費税`,
     });
   }
 

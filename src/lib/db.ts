@@ -19,7 +19,7 @@ function initTables(db: Database.Database) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS documents (
       id TEXT PRIMARY KEY,
-      type TEXT NOT NULL CHECK(type IN ('rent_statement', 'salary_slip', 'receipt', 'other')),
+      type TEXT NOT NULL CHECK(type IN ('bankbook', 'rent_statement', 'salary_slip', 'receipt', 'other')),
       file_name TEXT NOT NULL,
       file_path TEXT NOT NULL,
       uploaded_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),

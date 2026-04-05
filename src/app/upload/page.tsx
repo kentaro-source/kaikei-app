@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import ImageUploader from "@/components/ImageUploader";
 
 const DOCUMENT_TYPES = [
+  { value: "bankbook", label: "通帳" },
   { value: "rent_statement", label: "家賃精算書" },
   { value: "salary_slip", label: "給与明細" },
   { value: "receipt", label: "経費レシート" },

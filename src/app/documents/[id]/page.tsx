@@ -149,19 +149,21 @@ export default function DocumentDetailPage({
           <div className="text-sm text-gray-500">
             アップロード: {document.uploaded_at} / ステータス: {document.status}
           </div>
-          {document.file_path.toLowerCase().endsWith(".pdf") ? (
-            <embed
-              src={`/api/images/${document.file_path}`}
-              type="application/pdf"
-              className="h-[500px] w-full rounded border"
-            />
-          ) : (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={`/api/images/${document.file_path}`}
-              alt={document.file_name}
-              className="max-h-96 rounded border object-contain"
-            />
+          {!ocrResult && (
+            document.file_path.toLowerCase().endsWith(".pdf") ? (
+              <embed
+                src={`/api/images/${document.file_path}`}
+                type="application/pdf"
+                className="h-[500px] w-full rounded border"
+              />
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={`/api/images/${document.file_path}`}
+                alt={document.file_name}
+                className="max-h-96 rounded border object-contain"
+              />
+            )
           )}
         </CardContent>
       </Card>
@@ -180,6 +182,7 @@ export default function DocumentDetailPage({
         <OcrResultEditor
           ocrResult={ocrResult}
           documentType={document.type}
+          imagePath={document.file_path}
           onConfirm={handleConfirm}
         />
       )}
