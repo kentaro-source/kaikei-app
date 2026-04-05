@@ -135,8 +135,12 @@ export default function TaxSimPage() {
   const totalSalary = salaryEntries.reduce((sum, e) => sum + e.taxable_salary, 0);
   // 給与所得控除
   const salaryDeduction = calcSalaryDeduction(totalSalary);
+  // 所得金額調整控除（給与収入850万超の場合）
+  const incomeAdjustment = totalSalary > 8500000
+    ? Math.min(150000, (totalSalary - 8500000) * 0.1)
+    : 0;
   // 給与所得
-  const salaryIncome = Math.max(0, totalSalary - salaryDeduction);
+  const salaryIncome = Math.max(0, totalSalary - salaryDeduction - incomeAdjustment);
 
   // 不動産所得
   const realEstateProfitNum = num(realEstateProfit);
@@ -180,7 +184,7 @@ export default function TaxSimPage() {
           <CardTitle className="text-base">給与所得</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
             <div>
               <span className="text-gray-500">給与収入</span>
               <div className="font-mono text-lg">{fmt(totalSalary)}</div>
@@ -189,6 +193,12 @@ export default function TaxSimPage() {
               <span className="text-gray-500">給与所得控除</span>
               <div className="font-mono text-lg">-{fmt(salaryDeduction)}</div>
             </div>
+            {incomeAdjustment > 0 && (
+              <div>
+                <span className="text-gray-500">所得金額調整控除</span>
+                <div className="font-mono text-lg">-{fmt(incomeAdjustment)}</div>
+              </div>
+            )}
             <div>
               <span className="text-gray-500">給与所得</span>
               <div className="font-mono text-lg font-bold">{fmt(salaryIncome)}</div>
