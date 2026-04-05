@@ -28,6 +28,11 @@ const EXPENSE_ACCOUNT_MAP_CORPORATE: Record<string, string> = {
   "別借駐車場代": "地代家賃",
   "網戶貼り替え（大）": "修繕費",
   "網戸貼り替え（大）": "修繕費",
+  "定期清掃費": "修繕費",
+  "網戸調整": "修繕費",
+  "玄関ドア調整": "修繕費",
+  "扉剥がれ補修": "修繕費",
+  "床剥がれ補修": "修繕費",
 };
 
 // 個人の支出項目 → 勘定科目マッピング（収支内訳書準拠）
@@ -40,6 +45,11 @@ const EXPENSE_ACCOUNT_MAP_PERSONAL: Record<string, string> = {
   "別借駐車場代": "地代家賃",
   "網戶貼り替え（大）": "修繕費",
   "網戸貼り替え（大）": "修繕費",
+  "定期清掃費": "修繕費",
+  "網戸調整": "修繕費",
+  "玄関ドア調整": "修繕費",
+  "扉剥がれ補修": "修繕費",
+  "床剥がれ補修": "修繕費",
 };
 
 function getExpenseAccount(name: string, isPersonal = false): string {
@@ -53,7 +63,7 @@ function getExpenseAccount(name: string, isPersonal = false): string {
   // 電気・水道系
   if (name.includes("電気") || name.includes("水道") || name.includes("ガス")) return "水道光熱費";
   // 修繕系
-  if (name.includes("修繕") || name.includes("貼り替え") || name.includes("工事")) return "修繕費";
+  if (name.includes("修繕") || name.includes("貼り替え") || name.includes("工事") || name.includes("調整") || name.includes("補修") || name.includes("清掃")) return "修繕費";
   // デフォルト
   return "雑費";
 }

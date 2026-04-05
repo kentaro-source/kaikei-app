@@ -107,7 +107,7 @@ export default function WealthParkPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [entity]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
