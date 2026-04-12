@@ -247,7 +247,7 @@ export function processBankTransactions(
                 credit_sub_account: BANK_SUB_ACCOUNT,
                 amount,
                 description: `定期積金 ${prop}`,
-              }),
+              },
             };
           }
 
