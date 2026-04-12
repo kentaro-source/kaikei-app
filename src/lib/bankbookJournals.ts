@@ -81,9 +81,7 @@ function generateSocialInsuranceJournals(t: BankTransaction): BankJournalEntry[]
 // 除外ルール（摘要に含まれるキーワード）
 const SKIP_RULES: { keywords: string[]; reason: string }[] = [
   { keywords: ["タイコ", "ﾀｲｺ", "大興", "ﾀｲｺｳ", "タイコウ", "ヌイロウ", "ﾇｲﾛｳ", "トダタモノ", "ﾄﾀﾞﾀﾓﾉ", "ﾄﾁﾀﾃﾓﾉ"], reason: "管理会社入金（WealthPark処理済み）" },
-  { keywords: ["UC"], reason: "カード引落（カード連携済み）" },
   // RKS（ギガプライズ）はオーシャンハイツのインターネット代なので仕訳対象
-  { keywords: ["ミツイスミトモカード", "ﾐﾂｲｽﾐﾄﾓ", "ミツイストEカード", "ﾐﾂｲｽﾄ", "ミツイスト", "ミツイスミト", "ﾐﾂｲｽﾐﾄ"], reason: "カード引落（カード連携済み）" },
 ];
 
 // 仕訳ルール（摘要キーワード → 勘定科目）
@@ -165,6 +163,21 @@ const JOURNAL_RULES: {
     debit_account: "支払報酬",
     credit_account: "普通預金",
     label: "税理士報酬（源泉差引後）",
+  },
+  // 出金 - カード引落（未払金）
+  {
+    keywords: ["UC"],
+    debit_account: "未払金",
+    credit_account: "普通預金",
+    sub_account: "UC",
+    label: "カード引落",
+  },
+  {
+    keywords: ["ミツイスミトモカード", "ﾐﾂｲｽﾐﾄﾓ", "ミツイストEカード", "ﾐﾂｲｽﾄ", "ミツイスト", "ミツイスミト", "ﾐﾂｲｽﾐﾄ"],
+    debit_account: "未払金",
+    credit_account: "普通預金",
+    sub_account: "三井住友カード",
+    label: "カード引落",
   },
   // 出金 - 振込手数料
   {
