@@ -129,20 +129,20 @@ const JOURNAL_RULES: {
     credit_account: "普通預金",
     label: "社会保険料",
   },
-  // 出金 - インターネット（オーシャンハイツ桜ヶ丘）
+  // 出金 - インターネット（オーシャンハイツ）
   {
     keywords: ["RKS", "ギガプライズ", "ｷﾞｶﾞﾌﾟﾗｲｽﾞ", "ｷ*ｶ*ｱﾌﾟﾗｲｽ"],
     debit_account: "通信費",
     credit_account: "普通預金",
-    sub_account: "オーシャンハイツ桜ヶ丘",
+    sub_account: "オーシャンハイツ",
     label: "インターネット代",
   },
-  // 出金 - インターネット（祇園KAWANOビルⅢ）
+  // 出金 - インターネット（祇園kawanoビルⅢ）
   {
     keywords: ["SMBC", "ｲﾝﾀｰﾈｯﾄ", "インターネット"],
     debit_account: "通信費",
     credit_account: "普通預金",
-    sub_account: "祇園KAWANOビルⅢ",
+    sub_account: "祇園kawanoビルⅢ",
     label: "通信費",
   },
   // 入金 - 受取利息
@@ -261,7 +261,7 @@ export function processBankTransactions(
           // ローン返済は金額で物件を判別（大きい方がオーシャンハイツ）
           if (rule.debit_account === "__loan_repayment__") {
             const amount = t.withdrawal;
-            const prop = amount >= 200000 ? "オーシャンハイツ桜ヶ丘" : "祇園KAWANOビルⅢ";
+            const prop = amount >= 200000 ? "オーシャンハイツ" : "祇園kawanoビルⅢ";
             return {
               transaction: t,
               action: "journal" as const,
@@ -281,7 +281,7 @@ export function processBankTransactions(
           // 約定利息は金額で物件を判別
           if (rule.debit_account === "__loan_interest__") {
             const amount = t.withdrawal;
-            const prop = amount >= 200000 ? "オーシャンハイツ桜ヶ丘" : "祇園KAWANOビルⅢ";
+            const prop = amount >= 200000 ? "オーシャンハイツ" : "祇園kawanoビルⅢ";
             return {
               transaction: t,
               action: "journal" as const,

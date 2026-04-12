@@ -65,7 +65,7 @@ function parseTenantPage(pageText: string, month: string): TenantEntry[] {
 
     if (tenant && total > 0 && !tenant.includes("収入合計")) {
       tenants.push({
-        property_name: propertyName,
+        property_name: normalizePropertyName(propertyName),
         room,
         tenant_name: tenant,
         month,
@@ -169,7 +169,7 @@ export function parseWealthParkAnnualPdf(text: string): WealthParkAnnualReport {
     if (propertyName.includes("全保有物件")) continue;
 
     const annualProp: WealthParkAnnualProperty = {
-      property_name: propertyName,
+      property_name: normalizePropertyName(propertyName),
       year: report.year,
       months: [],
     };
@@ -254,6 +254,18 @@ export function parseWealthParkAnnualPdf(text: string): WealthParkAnnualReport {
 // 除外する物件名
 const EXCLUDED_PROPERTIES = ["グリーンゲーブルズ"];
 
+// PDF物件名 → 弥生補助科目名の変換
+const PROPERTY_NAME_MAP: Record<string, string> = {
+  "祇園ＫＡＷＡＮＯビルIII": "祇園kawanoビルⅢ",
+  "祇園KAWANOビルIII": "祇園kawanoビルⅢ",
+  "祇園KAWANOビルⅢ": "祇園kawanoビルⅢ",
+  "オーシャンハイツ桜ヶ丘": "オーシャンハイツ",
+};
+
+function normalizePropertyName(name: string): string {
+  return PROPERTY_NAME_MAP[name] || name;
+}
+
 /** 1ページ分のテキストから物件データを抽出 */
 function parsePropertyPage(pageText: string, month: string): WealthParkProperty | null {
   // 「保有物件の収入‧支出情報」を含むページのみ処理
@@ -267,7 +279,7 @@ function parsePropertyPage(pageText: string, month: string): WealthParkProperty 
   if (EXCLUDED_PROPERTIES.some((ex) => propertyName.includes(ex))) return null;
 
   const property: WealthParkProperty = {
-    property_name: propertyName,
+    property_name: normalizePropertyName(propertyName),
     settlement_month: month,
     income: { rent: 0, common_fee: 0, parking: 0, other: 0, total: 0 },
     expense: { items: [], total: 0 },
