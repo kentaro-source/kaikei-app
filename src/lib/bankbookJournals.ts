@@ -159,6 +159,13 @@ const JOURNAL_RULES: {
     credit_account: "普通預金",
     label: "法人税等",
   },
+  // 出金 - 税理士報酬
+  {
+    keywords: ["ZHP", "ｾﾞｲﾘｼ", "税理士", "ﾎｳｼｭｳ", "インボウシウ", "ｲﾝﾎﾞｳｼｳ"],
+    debit_account: "支払報酬",
+    credit_account: "普通預金",
+    label: "税理士報酬",
+  },
   // 出金 - 振込手数料
   {
     keywords: ["振込手数料", "ﾌﾘｺﾐﾃｽｳﾘｮｳ", "手数料"],
