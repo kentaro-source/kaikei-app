@@ -80,7 +80,7 @@ function generateSocialInsuranceJournals(t: BankTransaction): BankJournalEntry[]
 
 // 除外ルール（摘要に含まれるキーワード）
 const SKIP_RULES: { keywords: string[]; reason: string }[] = [
-  { keywords: ["タイコ", "ﾀｲｺ", "大興", "ﾀｲｺｳ", "タイコウ"], reason: "管理会社入金（WealthPark処理済み）" },
+  { keywords: ["タイコ", "ﾀｲｺ", "大興", "ﾀｲｺｳ", "タイコウ", "ヌイロウ", "ﾇｲﾛｳ", "トダタモノ", "ﾄﾀﾞﾀﾓﾉ", "ﾄﾁﾀﾃﾓﾉ"], reason: "管理会社入金（WealthPark処理済み）" },
   { keywords: ["UC"], reason: "カード引落（カード連携済み）" },
   // RKS（ギガプライズ）はオーシャンハイツのインターネット代なので仕訳対象
   { keywords: ["ミツイスミトモカード", "ﾐﾂｲｽﾐﾄﾓ", "ミツイストEカード", "ﾐﾂｲｽﾄ", "ミツイスト", "ミツイスミト", "ﾐﾂｲｽﾐﾄ"], reason: "カード引落（カード連携済み）" },
@@ -187,9 +187,9 @@ function matchesKeywords(description: string, keywords: string[]): boolean {
   return keywords.some((kw) => cleaned.includes(kw.toUpperCase()));
 }
 
-/** 摘要から先頭の金額混入を除去 */
+/** 摘要から金額混入・記号を除去 */
 function cleanDescription(desc: string): string {
-  return desc.replace(/^[\d,]+/, "").trim();
+  return desc.replace(/^\*?[\d,\.]+/, "").trim();
 }
 
 const BANK_SUB_ACCOUNT = "宮崎太陽銀行";
