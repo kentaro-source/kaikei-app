@@ -241,7 +241,7 @@ export function processBankTransactions(
           // 定期積金は金額で物件を判別
           if (rule.debit_account === "__teiki__") {
             const amount = t.withdrawal;
-            const prop = amount >= 100000 ? "オーシャン" : "祇園kawano";
+            const prop = amount >= 100000 ? "宮崎太陽銀行(オーシャン)" : "宮崎太陽銀行(祇園kawano)";
             return {
               transaction: t,
               action: "journal" as const,
