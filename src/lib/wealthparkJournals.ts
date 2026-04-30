@@ -63,7 +63,7 @@ function getExpenseAccount(name: string, isPersonal = false): string {
   // 電気・水道系
   if (name.includes("電気") || name.includes("水道") || name.includes("ガス")) return "水道光熱費";
   // 修繕系
-  if (name.includes("修繕") || name.includes("貼り替え") || name.includes("工事") || name.includes("調整") || name.includes("補修") || name.includes("清掃")) return "修繕費";
+  if (name.includes("修繕") || name.includes("貼り替え") || name.includes("工事") || name.includes("調整") || name.includes("補修") || name.includes("清掃") || name.includes("取付") || name.includes("交換") || name.includes("修理")) return "修繕費";
   // デフォルト
   return "雑費";
 }
