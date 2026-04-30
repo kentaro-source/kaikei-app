@@ -34,7 +34,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const db = ensureTable();
-    const { employer, date, taxable_salary, income_tax } = await request.json();
+    const body = await request.json();
+    const { employer, date, taxable_salary, income_tax, health_insurance, pension } = body;
 
     if (!employer || !date || !taxable_salary) {
       return NextResponse.json({ error: "必須項目が不足しています" }, { status: 400 });
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     const id = uuidv4();
     db.prepare(
       "INSERT INTO salary_entries (id, employer, date, taxable_salary, income_tax, health_insurance, pension) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    ).run(id, employer, date, taxable_salary, income_tax || 0, body.health_insurance || 0, body.pension || 0);
+    ).run(id, employer, date, taxable_salary, income_tax || 0, health_insurance || 0, pension || 0);
 
     const entry = db.prepare("SELECT * FROM salary_entries WHERE id = ?").get(id);
     return NextResponse.json({ entry });
