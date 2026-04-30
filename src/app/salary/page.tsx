@@ -44,8 +44,9 @@ export default function SalaryPage() {
 
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
-  const taxableNum = parseInt(taxable.replace(/,/g, "") || "0");
-  const taxNum = parseInt(tax.replace(/,/g, "") || "0");
+  const num = (s: string) => parseInt(s.replace(/,/g, "") || "0", 10);
+  const taxableNum = num(taxable);
+  const taxNum = num(tax);
 
   const handleAdd = async () => {
     if (!date || !taxable) {
