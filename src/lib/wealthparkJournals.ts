@@ -33,6 +33,7 @@ const EXPENSE_ACCOUNT_MAP_CORPORATE: Record<string, string> = {
   "玄関ドア調整": "修繕費",
   "扉剥がれ補修": "修繕費",
   "床剥がれ補修": "修繕費",
+  "営業促進費": "広告宣伝費",
 };
 
 // 個人の支出項目 → 勘定科目マッピング（収支内訳書準拠）
@@ -50,6 +51,7 @@ const EXPENSE_ACCOUNT_MAP_PERSONAL: Record<string, string> = {
   "玄関ドア調整": "修繕費",
   "扉剥がれ補修": "修繕費",
   "床剥がれ補修": "修繕費",
+  "営業促進費": "広告宣伝費",
 };
 
 function getExpenseAccount(name: string, isPersonal = false): string {
@@ -64,6 +66,10 @@ function getExpenseAccount(name: string, isPersonal = false): string {
   if (name.includes("電気") || name.includes("水道") || name.includes("ガス")) return "水道光熱費";
   // 修繕系
   if (name.includes("修繕") || name.includes("貼り替え") || name.includes("工事") || name.includes("調整") || name.includes("補修") || name.includes("清掃") || name.includes("取付") || name.includes("交換") || name.includes("修理")) return "修繕費";
+  // 広告宣伝系
+  if (name.includes("営業促進") || name.includes("広告") || name.includes("宣伝")) return "広告宣伝費";
+  // その他は修繕費として扱う（WealthParkの「その他」項目は基本的に物件の修繕系）
+  if (name.includes("その他")) return "修繕費";
   // デフォルト
   return "雑費";
 }
