@@ -80,7 +80,7 @@ function generateSocialInsuranceJournals(t: BankTransaction): BankJournalEntry[]
 
 // 除外ルール（摘要に含まれるキーワード）
 const SKIP_RULES: { keywords: string[]; reason: string }[] = [
-  { keywords: ["タイコ", "ﾀｲｺ", "大興", "ﾀｲｺｳ", "タイコウ", "ヌイロウ", "ﾇｲﾛｳ", "トダタモノ", "ﾄﾀﾞﾀﾓﾉ", "ﾄﾁﾀﾃﾓﾉ"], reason: "管理会社入金（WealthPark処理済み）" },
+  { keywords: ["タイコ", "ﾀｲｺ", "大興", "ﾀｲｺｳ", "タイコウ", "ダイコウ", "ﾀﾞｲｺｳ", "ヌイロウ", "ﾇｲﾛｳ", "トダタモノ", "ﾄﾀﾞﾀﾓﾉ", "ﾄﾁﾀﾃﾓﾉ", "トチタテモノ", "ﾄｸﾀﾈﾉ"], reason: "管理会社入金（WealthPark処理済み）" },
   // RKS（ギガプライズ）はオーシャンハイツのインターネット代なので仕訳対象
 ];
 
