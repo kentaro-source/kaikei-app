@@ -11,6 +11,9 @@ interface SalaryEntry {
   date: string;
   taxable_salary: number;
   income_tax: number;
+  health_insurance: number;
+  pension: number;
+  child_care: number;
 }
 
 // 所得税率テーブル（2024年現在）
@@ -161,10 +164,19 @@ export default function TaxSimPage() {
   // 基礎控除
   const basicDeduction = calcBasicDeduction(totalIncome);
 
+  // 給与から自動取得する社会保険料（健保＋厚年＋子育て支援金）
+  const salarySocialInsurance = salaryEntries.reduce(
+    (sum, e) => sum + (e.health_insurance || 0) + (e.pension || 0) + (e.child_care || 0),
+    0
+  );
+
+  // 社会保険料控除合計（給与＋手入力）
+  const totalSocialInsurance = salarySocialInsurance + num(socialInsurance);
+
   // 所得控除合計
   const totalDeductions =
     basicDeduction +
-    num(socialInsurance) +
+    totalSocialInsurance +
     num(lifeInsurance) +
     num(earthquakeInsurance) +
     num(medicalExpense) +
@@ -247,7 +259,7 @@ export default function TaxSimPage() {
         <CardContent>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
             <div>
-              <Label>社会保険料控除</Label>
+              <Label>社会保険料控除（追加分）</Label>
               <Input
                 inputMode="numeric"
                 value={socialInsurance}
@@ -255,6 +267,12 @@ export default function TaxSimPage() {
                 placeholder="0"
                 className="mt-1"
               />
+              {salarySocialInsurance > 0 && (
+                <p className="mt-1 text-[10px] text-gray-400">
+                  給与から自動: {salarySocialInsurance.toLocaleString()}円<br/>
+                  合計: {totalSocialInsurance.toLocaleString()}円
+                </p>
+              )}
             </div>
             <div>
               <Label>生命保険料控除</Label>

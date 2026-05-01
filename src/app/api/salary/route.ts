@@ -14,6 +14,7 @@ function ensureTable() {
       income_tax INTEGER NOT NULL DEFAULT 0,
       health_insurance INTEGER NOT NULL DEFAULT 0,
       pension INTEGER NOT NULL DEFAULT 0,
+      child_care INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     )
   `);
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
   try {
     const db = ensureTable();
     const body = await request.json();
-    const { employer, date, taxable_salary, income_tax, health_insurance, pension } = body;
+    const { employer, date, taxable_salary, income_tax, health_insurance, pension, child_care } = body;
 
     if (!employer || !date || !taxable_salary) {
       return NextResponse.json({ error: "必須項目が不足しています" }, { status: 400 });
@@ -43,8 +44,8 @@ export async function POST(request: NextRequest) {
 
     const id = uuidv4();
     db.prepare(
-      "INSERT INTO salary_entries (id, employer, date, taxable_salary, income_tax, health_insurance, pension) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    ).run(id, employer, date, taxable_salary, income_tax || 0, health_insurance || 0, pension || 0);
+      "INSERT INTO salary_entries (id, employer, date, taxable_salary, income_tax, health_insurance, pension, child_care) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(id, employer, date, taxable_salary, income_tax || 0, health_insurance || 0, pension || 0, child_care || 0);
 
     const entry = db.prepare("SELECT * FROM salary_entries WHERE id = ?").get(id);
     return NextResponse.json({ entry });

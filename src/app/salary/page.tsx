@@ -22,6 +22,7 @@ interface SalaryEntry {
   income_tax: number;
   health_insurance: number;
   pension: number;
+  child_care: number;
 }
 
 export default function SalaryPage() {
@@ -31,6 +32,7 @@ export default function SalaryPage() {
   const [tax, setTax] = useState("");
   const [health, setHealth] = useState("");
   const [pension, setPension] = useState("");
+  const [childCare, setChildCare] = useState("");
   const [entries, setEntries] = useState<SalaryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +67,7 @@ export default function SalaryPage() {
           income_tax: taxNum,
           health_insurance: num(health),
           pension: num(pension),
+          child_care: num(childCare),
         }),
       });
       if (!res.ok) throw new Error("保存に失敗しました");
@@ -73,6 +76,7 @@ export default function SalaryPage() {
       setTax("");
       setHealth("");
       setPension("");
+      setChildCare("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました");
     }
@@ -167,7 +171,7 @@ export default function SalaryPage() {
             </div>
           </div>
           {employer === "株式会社DRK企画" && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label>健康保険料</Label>
                 <Input
@@ -184,6 +188,16 @@ export default function SalaryPage() {
                   inputMode="numeric"
                   value={pension}
                   onChange={(e) => setPension(e.target.value)}
+                  placeholder="0"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>子ども・子育て支援金</Label>
+                <Input
+                  inputMode="numeric"
+                  value={childCare}
+                  onChange={(e) => setChildCare(e.target.value)}
                   placeholder="0"
                   className="mt-1"
                 />
@@ -212,6 +226,7 @@ export default function SalaryPage() {
                   <th className="pb-2 text-right">源泉徴収</th>
                   <th className="pb-2 text-right">健保</th>
                   <th className="pb-2 text-right">厚年</th>
+                  <th className="pb-2 text-right">子育て</th>
                   <th className="pb-2"></th>
                 </tr>
               </thead>
@@ -224,6 +239,7 @@ export default function SalaryPage() {
                     <td className="py-2 text-right font-mono">{e.income_tax.toLocaleString()}</td>
                     <td className="py-2 text-right font-mono">{e.health_insurance ? e.health_insurance.toLocaleString() : ""}</td>
                     <td className="py-2 text-right font-mono">{e.pension ? e.pension.toLocaleString() : ""}</td>
+                    <td className="py-2 text-right font-mono">{e.child_care ? e.child_care.toLocaleString() : ""}</td>
                     <td className="py-2">
                       <button onClick={() => handleRemove(e.id)} className="text-xs text-red-400 hover:text-red-600">削除</button>
                     </td>
@@ -236,6 +252,7 @@ export default function SalaryPage() {
                   <td className="pt-2 text-right font-mono">{totalTax.toLocaleString()}</td>
                   <td className="pt-2 text-right font-mono">{entries.reduce((s, e) => s + (e.health_insurance || 0), 0) || ""}</td>
                   <td className="pt-2 text-right font-mono">{entries.reduce((s, e) => s + (e.pension || 0), 0) || ""}</td>
+                  <td className="pt-2 text-right font-mono">{entries.reduce((s, e) => s + (e.child_care || 0), 0) || ""}</td>
                   <td></td>
                 </tr>
               </tbody>
