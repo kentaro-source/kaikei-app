@@ -180,9 +180,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ parsed: Array.isArray(parsed) ? parsed[0] : parsed, raw_response: textContent.text });
     }
 
-    // 画像の場合
-    const base64 = fileBuffer.toString("base64");
-    const mediaType = ext === ".png" ? "image/png" : "image/jpeg";
+    // 画像の場合（Claude APIの10MB制限に合わせて圧縮）
+    const sharp = (await import("sharp")).default;
+    let imageBuffer = fileBuffer;
+    // 10MB以下になるまで圧縮（base64は約4/3倍になるので7MBを目安）
+    const MAX_SIZE = 7 * 1024 * 1024;
+    if (fileBuffer.length > MAX_SIZE) {
+      let quality = 80;
+      let width = 2400;
+      while (true) {
+        imageBuffer = await sharp(fileBuffer)
+          .resize({ width, withoutEnlargement: true })
+          .jpeg({ quality })
+          .toBuffer();
+        if (imageBuffer.length <= MAX_SIZE || (quality <= 40 && width <= 1200)) break;
+        if (quality > 40) quality -= 10;
+        else width = Math.floor(width * 0.8);
+      }
+    }
+    const base64 = imageBuffer.toString("base64");
+    const mediaType = ext === ".png" && fileBuffer.length <= MAX_SIZE ? "image/png" : "image/jpeg";
     imageBlocks.push({
       type: "image",
       source: { type: "base64", media_type: mediaType as "image/png" | "image/jpeg", data: base64 },
