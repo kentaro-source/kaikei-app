@@ -68,6 +68,47 @@ export default function BankbookPage() {
     );
   };
 
+  const restoreSkipped = (transactionIndex: number) => {
+    setResults((prev) => {
+      const skippedIndices: number[] = [];
+      prev.forEach((r, i) => {
+        if (r.action === "skip") skippedIndices.push(i);
+      });
+      const targetIndex = skippedIndices[transactionIndex];
+      if (targetIndex === undefined) return prev;
+
+      return prev.map((r, i) => {
+        if (i !== targetIndex) return r;
+        const t = r.transaction;
+        const amount = t.deposit > 0 ? t.deposit : t.withdrawal;
+        // 入金は産業医収入、出金は要確認として復活
+        const cleanedDesc = t.description.replace(/^\*?[\d,\.]+/, "").trim();
+        const journal = t.deposit > 0
+          ? {
+              id: crypto.randomUUID(),
+              date: t.date,
+              debit_account: "普通預金",
+              debit_sub_account: "宮崎太陽銀行",
+              credit_account: "産業医収入",
+              credit_sub_account: "",
+              amount,
+              description: `産業医収入 ${cleanedDesc}`,
+            }
+          : {
+              id: crypto.randomUUID(),
+              date: t.date,
+              debit_account: "【要確認】",
+              debit_sub_account: "",
+              credit_account: "普通預金",
+              credit_sub_account: "宮崎太陽銀行",
+              amount,
+              description: cleanedDesc,
+            };
+        return { transaction: t, action: "journal" as const, journal };
+      });
+    });
+  };
+
   const updateJournal = (id: string, field: string, value: string) => {
     setResults((prev) =>
       prev.map((r) => {
@@ -322,6 +363,7 @@ export default function BankbookPage() {
                       <TableHead>摘要</TableHead>
                       <TableHead className="text-right">金額</TableHead>
                       <TableHead>除外理由</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -333,6 +375,9 @@ export default function BankbookPage() {
                           {r.transaction.deposit > 0 ? `+${r.transaction.deposit.toLocaleString()}` : `-${r.transaction.withdrawal.toLocaleString()}`}
                         </TableCell>
                         <TableCell className="text-xs">{r.skip_reason}</TableCell>
+                        <TableCell>
+                          <button onClick={() => restoreSkipped(i)} className="text-xs text-blue-500 hover:text-blue-700">復活</button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
