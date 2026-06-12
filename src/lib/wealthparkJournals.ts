@@ -84,6 +84,8 @@ export function wealthParkToJournals(
   const d = date || `${property.settlement_month}/15`; // デフォルトは15日
   const prop = property.property_name;
 
+  const bankSub = "宮崎太陽銀行";
+
   // === 収入の仕訳 ===
   const incomeAccount = isPersonal ? "賃貸料" : "売上高";
   if (property.income.total > 0) {
@@ -91,7 +93,7 @@ export function wealthParkToJournals(
       id: uuidv4(),
       date: d,
       debit_account: "普通預金",
-      debit_sub_account: "",
+      debit_sub_account: bankSub,
       credit_account: incomeAccount,
       credit_sub_account: prop,
       amount: property.income.total,
@@ -108,7 +110,7 @@ export function wealthParkToJournals(
       debit_account: account,
       debit_sub_account: prop,
       credit_account: "普通預金",
-      credit_sub_account: "",
+      credit_sub_account: bankSub,
       amount: item.amount,
       description: `${prop} ${item.name}`,
     });
