@@ -122,7 +122,7 @@ export function cardToJournals(transactions: CardTransaction[]): CardJournalEntr
       debit_account: getCategoryAccount(t.category_major, t.category_minor),
       debit_sub_account: "",
       credit_account: "未払金",
-      credit_sub_account: "出光カード",
+      credit_sub_account: "クレジットカード",
       amount: t.amount,
       description: `${t.description}${t.memo ? ` (${t.memo})` : ""}`,
     }));
