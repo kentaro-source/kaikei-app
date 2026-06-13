@@ -56,7 +56,15 @@ const CATEGORY_MAP: Record<string, string> = {
   "その他": "雑費",
 };
 
-function getCategoryAccount(major: string, minor: string): string {
+// 内容（description）から判別するルール
+function getAccountFromDescription(desc: string): string | null {
+  if (/ETC|ｅｔｃ/i.test(desc)) return "旅費交通費";
+  return null;
+}
+
+function getCategoryAccount(major: string, minor: string, description = ""): string {
+  const fromDesc = getAccountFromDescription(description);
+  if (fromDesc) return fromDesc;
   if (CATEGORY_MAP[minor]) return CATEGORY_MAP[minor];
   if (CATEGORY_MAP[major]) return CATEGORY_MAP[major];
   return "雑費";
@@ -119,7 +127,7 @@ export function cardToJournals(transactions: CardTransaction[]): CardJournalEntr
     .map((t) => ({
       id: uuidv4(),
       date: t.date,
-      debit_account: getCategoryAccount(t.category_major, t.category_minor),
+      debit_account: getCategoryAccount(t.category_major, t.category_minor, t.description),
       debit_sub_account: "",
       credit_account: "未払金",
       credit_sub_account: "クレジットカード",
