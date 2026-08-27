@@ -38,7 +38,7 @@
 - `salary_entries` と `tax_sim_data` は `ALTER TABLE` で後付けカラムが増えているため、DB作り直し時は最新 API 経由で作成すること（`src/lib/db.ts` の定義には未反映のカラムがある）
 
 ### 外部サービス
-- **Anthropic Claude API**: 通帳スキャンのOCR用（`claude-sonnet-4-20250514`）。10MB制限があるため `sharp` で圧縮してから送信
+- **Anthropic Claude API**: 通帳スキャンのOCR用（`claude-sonnet-5`）。10MB制限があるため `sharp` で圧縮してから送信。`thinking: { type: "disabled" }` を必ず指定すること（後述バグ参照）
   - APIキー: `.env.local` の `ANTHROPIC_API_KEY`
   - `.env*` は `.gitignore` 対象。**コミット禁止**
   - キーが必要なのは `/api/ocr-claude` のみ
@@ -166,6 +166,8 @@
 - **税制ブラケット（所得税率）は2024年基準**: `TAX_BRACKETS` は2025・2026年でも変わっていないため問題は出にくいが、変更時は要修正
 - **REQUIREMENTS.md の初期構想は現状と大きく乖離**: `documents` / `ocr_results` / `templates` テーブルベースの汎用OCR構想は放棄され、書類種別ごと専用フロー（WealthPark/bankbook/card/salary）に置き換わっている
 - **弥生の仕訳インポート時に「不正な行」エラーが出ることがある**: 原因未特定。過去にはUTF-8で出力していたバグを Shift_JIS に修正して解消したが、別要因での再発報告あり
+- **(解決済み・再発注意) モデルID廃止で通帳OCRが404**: `claude-sonnet-4-20250514` が使用不可になり `claude-sonnet-5` に変更（`6b023a5`）。将来的にモデルが再度廃止される可能性があるため、404が出たら `src/app/api/ocr-claude/route.ts` の2箇所の `model:` を最新のモデルIDに更新すること
+- **(解決済み・要注意) `claude-sonnet-5` はデフォルトでextended thinkingが有効**: `max_tokens` を明示指定していてもthinkingトークンがそれを食い潰し、`stop_reason: max_tokens` でtextブロックが一切生成されないままAPI課金だけ発生する（`content: [{type: "thinking", thinking: ""}]` のみが返る）。`/api/ocr-claude` では `thinking: { type: "disabled" }` を明示して回避済み（`bc38c24`）。**Claude APIを新規に呼ぶコードを追加する際は必ずこのオプションを検討すること**（thinkingを使いたい場合は明示的に有効化し、それに応じてmax_tokensを十分大きくする）
 - **通帳画像を1枚ずつスキャンして重複除外**: 見開き2枚を別画像でアップロードした場合の重複は、日付+金額+残高で照合しているため、Claude APIの読み取り誤差で残高が1円でも変わると重複除外に失敗する
 
 ## 5. 残タスクと次に着手すべきこと
