@@ -39,6 +39,10 @@ const SOCIAL_INSURANCE = {
   employee_share: 10978,  // 預り金（従業員負担）
 };
 
+// 外壁塗装ローン（祇園kawanoビルⅢとは別枠）の元金均等返済額（固定）
+// 利息は減少していくが元金は毎月この額のまま。この金額で物件別ローンと区別する
+const WALL_PAINTING_LOAN_PRINCIPAL = 84000;
+
 function generateSocialInsuranceJournals(t: BankTransaction): BankJournalEntry[] {
   const total = t.withdrawal;
   const company = SOCIAL_INSURANCE.company_share;
@@ -272,9 +276,13 @@ export function processBankTransactions(
           }
 
           // ローン返済は金額で物件を判別（大きい方がオーシャンハイツ）
+          // 外壁塗装ローン（元金均等返済・元金84,000円固定）は物件別ローンと別枠で判別
           if (rule.debit_account === "__loan_repayment__") {
             const amount = t.withdrawal;
-            const prop = amount >= 200000 ? "オーシャンハイツ" : "祇園kawanoビルⅢ";
+            const isWallPaintingLoan = amount === WALL_PAINTING_LOAN_PRINCIPAL;
+            const prop = isWallPaintingLoan
+              ? "外壁"
+              : amount >= 200000 ? "オーシャンハイツ" : "祇園kawanoビルⅢ";
             return {
               transaction: t,
               action: "journal" as const,
