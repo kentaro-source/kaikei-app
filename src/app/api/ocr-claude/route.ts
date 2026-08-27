@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       // sharpはPDF非対応なので、PDFはdocumentとして送る
       const base64 = fileBuffer.toString("base64");
       const response = await client.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5",
         max_tokens: 4096,
         messages: [
           {
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
     });
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-5",
       max_tokens: 4096,
       messages: [
         {
