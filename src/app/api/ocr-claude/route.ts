@@ -145,7 +145,8 @@ export async function POST(request: NextRequest) {
       const base64 = fileBuffer.toString("base64");
       const response = await client.messages.create({
         model: "claude-sonnet-5",
-        max_tokens: 4096,
+        max_tokens: 8096,
+        thinking: { type: "disabled" },
         messages: [
           {
             role: "user",
@@ -207,7 +208,8 @@ export async function POST(request: NextRequest) {
 
     const response = await client.messages.create({
       model: "claude-sonnet-5",
-      max_tokens: 4096,
+      max_tokens: 8096,
+      thinking: { type: "disabled" },
       messages: [
         {
           role: "user",
