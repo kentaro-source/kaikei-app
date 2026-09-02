@@ -12,6 +12,7 @@ const EMPLOYERS = [
   "森のクリニック",
   "若草病院",
   "小林保養院",
+  "PAみやざき",
 ];
 
 interface SalaryEntry {
