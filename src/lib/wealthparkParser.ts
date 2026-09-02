@@ -44,7 +44,8 @@ function parseNum(s: string): number {
 function parseTenantPage(pageText: string, month: string): TenantEntry[] {
   if (!pageText.includes("保有物件の収入明細")) return [];
 
-  const nameMatch = pageText.match(/大興土地建物管理\n(.+?)\n/);
+  // 物件名は「収入合計¥」の直前の行（会社名がヘッダーにもフッターにも来るPDF両対応）
+  const nameMatch = pageText.match(/(.+?)\n収入合計¥/);
   if (!nameMatch) return [];
   const propertyName = nameMatch[1].trim();
   if (EXCLUDED_PROPERTIES.some((ex) => propertyName.includes(ex))) return [];
@@ -163,7 +164,7 @@ export function parseWealthParkAnnualPdf(text: string): WealthParkAnnualReport {
   for (const page of pages) {
     if (!page.includes("保有物件の収入‧支出情報")) continue;
 
-    const nameMatch = page.match(/大興土地建物管理\n(.+?)\n/);
+    const nameMatch = page.match(/(.+?)\n収入合計¥/);
     if (!nameMatch) continue;
     const propertyName = nameMatch[1].trim();
     if (propertyName.includes("全保有物件")) continue;
@@ -271,8 +272,8 @@ function parsePropertyPage(pageText: string, month: string): WealthParkProperty 
   // 「保有物件の収入‧支出情報」を含むページのみ処理
   if (!pageText.includes("保有物件の収入‧支出情報")) return null;
 
-  // 物件名を抽出（「株式会社 大興土地建物管理」の次の行）
-  const nameMatch = pageText.match(/大興土地建物管理\n(.+?)\n/);
+  // 物件名は「収入合計¥」の直前の行（会社名がヘッダーにもフッターにも来るPDF両対応）
+  const nameMatch = pageText.match(/(.+?)\n収入合計¥/);
   if (!nameMatch) return null;
   const propertyName = nameMatch[1].trim();
   if (propertyName.includes("全保有物件")) return null;
