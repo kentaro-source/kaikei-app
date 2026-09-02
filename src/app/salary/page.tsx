@@ -15,6 +15,11 @@ const EMPLOYERS = [
   "PAみやざき",
 ];
 
+// 毎月固定額の勤務先（支給日・課税支給額・源泉徴収税額）
+const FIXED_SALARY: Record<string, { day: number; taxable: number; tax: number }> = {
+  "PAみやざき": { day: 15, taxable: 40000, tax: 1225 },
+};
+
 interface SalaryEntry {
   id: string;
   employer: string;
@@ -50,6 +55,23 @@ export default function SalaryPage() {
   const num = (s: string) => parseInt(s.replace(/,/g, "") || "0", 10);
   const taxableNum = num(taxable);
   const taxNum = num(tax);
+
+  // 固定給与の勤務先を選んだら金額を自動入力（日付は未入力時のみ目安日を補完。休日等で自由に変更可）
+  const handleEmployerChange = (value: string) => {
+    setEmployer(value);
+    const fixed = FIXED_SALARY[value];
+    if (fixed) {
+      setTaxable(fixed.taxable.toString());
+      setTax(fixed.tax.toString());
+      if (!date) {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(fixed.day).padStart(2, "0");
+        setDate(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+  };
 
   const handleAdd = async () => {
     if (!date || !taxable) {
@@ -131,7 +153,7 @@ export default function SalaryPage() {
               <Label>勤務先</Label>
               <select
                 value={employer}
-                onChange={(e) => setEmployer(e.target.value)}
+                onChange={(e) => handleEmployerChange(e.target.value)}
                 className="mt-1 w-full rounded border px-3 py-2 text-sm"
               >
                 {EMPLOYERS.map((e) => (
